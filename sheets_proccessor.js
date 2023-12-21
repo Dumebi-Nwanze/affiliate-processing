@@ -507,7 +507,8 @@ app.post("/create-lead", verifyToken, async (req, res) => {
     } else {
       suffix = suffices[0][adminUuid];
     }
-    uuid = crypto.randomUUID().split(-12) + suffix;
+ 
+    uuid = crypto.randomUUID().split('-').slice(0, -1).join('-') + '-' + suffix;
   } catch (error) {
     console.error("Error reading or parsing suffices:", error);
     return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
