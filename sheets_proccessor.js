@@ -561,6 +561,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
 
             partnerId: 76,
           };
+          console.log(matchTradeData);
           try {
             const response = await sendLeadToMatchTrade(matchTradeData);
             if (response.status === 200) {
