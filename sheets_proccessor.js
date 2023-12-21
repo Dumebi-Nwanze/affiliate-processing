@@ -156,7 +156,7 @@ async function pushToDialer(
     minutes +
     ":" +
     seconds;
-  const url = "http://mc.td.commpeak.com/api/leads";
+  const url = "https://mc.td.commpeak.com/api/leads";
   const urlmass = "https://mc.td.commpeak.com/api/campaign-leads/mass-assign";
 
   const username = "developer2";
