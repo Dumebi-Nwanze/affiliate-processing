@@ -209,10 +209,9 @@ async function pushToDialer(
     await fetch(url, options)
       .then(async (response) => {
         if (!response.ok) {
-          const res = await response.body()
           throw new Error(
             "Error occured while creating lead in dialer CRM:::::::: [" +
-              response.status + res+
+              response.status + 
               "]"
               
           );
