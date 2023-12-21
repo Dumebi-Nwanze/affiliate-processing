@@ -346,7 +346,7 @@ console.log(token);
     return res.status(401).json({ message: "Unauthorized - Missing token" });
   }
 
-  jwt.verify(token, process.env.SECRET_KEY, (err, user) => {
+  jwt.verify(token.split(" ")[1], process.env.SECRET_KEY, (err, user) => {
     if (err) {
       if (err.name === "TokenExpiredError") {
         return res
