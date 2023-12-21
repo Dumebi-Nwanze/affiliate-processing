@@ -416,7 +416,7 @@ app.post("/getAccessToken", async (req, res) => {
   console.log(users);
 
   // Find user by username
-  const user = users.find((u) => u.username === username);
+  const user = users.filter((u) => u.username === username)[0]??null;
 
   console.log(user);
 
