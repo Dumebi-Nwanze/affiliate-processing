@@ -337,6 +337,7 @@ const getDeposits = async () => {
   const response = await axios.get(apiUrl, { headers });
 
   console.log(response.data.content);
+  return response.data.content
 };
 
 /**    Push to Dialer Code End */
