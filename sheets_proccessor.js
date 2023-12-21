@@ -162,7 +162,9 @@ async function pushToDialer(
   const username = "developer2";
   const password = "QddYW1F3wVOx";
   const credentials = btoa(`${username}:${password}`);
-
+console.log(username)
+console.log(password)
+console.log(credentials)
   const postData = [
     {
       first_name: name,
