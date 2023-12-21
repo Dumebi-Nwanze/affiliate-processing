@@ -409,6 +409,7 @@ function formatDate(date) {
 
 app.post("/getAccessToken", async (req, res) => {
   const { username, password } = req.body;
+  console.log(req.body);
 
   // Retrieve user data from the JSON file
   const users = await readUsersFile();
@@ -416,6 +417,8 @@ app.post("/getAccessToken", async (req, res) => {
 
   // Find user by username
   const user = users.find((u) => u.username === username);
+
+  console.log(user);
 
   if (!user || user.password !== password) {
     return res.status(401).json({ message: "Invalid credentials" });
@@ -429,6 +432,7 @@ app.post("/getAccessToken", async (req, res) => {
       expiresIn: "15m",
     }
   );
+  console.log(accessToken);
 
   res.status(200).json({ accessToken });
 });
