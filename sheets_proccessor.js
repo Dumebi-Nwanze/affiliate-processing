@@ -341,7 +341,7 @@ const getDeposits = async () => {
 
 function verifyToken(req, res, next) {
   const token = req.header("Authorization");
-
+console.log(token);
   if (!token) {
     return res.status(401).json({ message: "Unauthorized - Missing token" });
   }
