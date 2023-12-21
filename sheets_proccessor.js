@@ -663,38 +663,35 @@ app.get("/leads", verifyToken, async (req, res) => {
     );
   }
   try {
-    let page = 0;
+    // let page = 0;
 
-    while (true) {
-      const leads = await getLeadsFromMatchTrade(page);
+    // while (true) {
+    //   const leads = await getLeadsFromMatchTrade(page);
 
-      if (!leads || leads.data.length === 0) {
-        // Break the loop if there are no more leads
-        break;
-      }
+    //   if (!leads || leads.data.length === 0) {
+    //     // Break the loop if there are no more leads
+    //     break;
+    //   }
 
-      allLeads.push(...leads);
-      page++;
+    //   allLeads.push(...leads);
+    //   page++;
 
-      if (leads.data.length < 2000) {
-        // Break the loop if the number of leads is less than 2000
-        break;
-      }
-    }
+    //   if (leads.data.length < 2000) {
+    //     // Break the loop if the number of leads is less than 2000
+    //     break;
+    //   }
+    // }
 
-    console.log("All leads:", allLeads.length);
+    // console.log("All leads:", allLeads.length);
 
     // const filteredLeads = allLeads.filter((lead) => {
     //   const leadSuffix = lead.uuid.slice(-12);
     //   return leadSuffix === suffix;
     // });
-    try {
+    
       const deposits = await getDeposits();
       allDeposits.push(...deposits);
-    } catch (e) {
-      console.log("Error:::::Couldn't get deposits");
-     return res.status(500).send("Error:::::Couldn't get deposits");
-    }
+  
     const filteredDeposits = allDeposits.filter((deposit) => {
       const leadSuffix = deposit.accountLeadSource.split("-")[1];
       return leadSuffix === suffix && isEarliestCreatedAtForAccount(deposit);
