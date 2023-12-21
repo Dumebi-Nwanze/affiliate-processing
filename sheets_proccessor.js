@@ -156,15 +156,13 @@ async function pushToDialer(
     minutes +
     ":" +
     seconds;
-  const url = "https://mc.td.commpeak.com/api/leads";
+  const url = "http://mc.td.commpeak.com/api/leads";
   const urlmass = "https://mc.td.commpeak.com/api/campaign-leads/mass-assign";
 
-  const username = "developer2";
-  const password = "KiT9Nd18Y3xo";
+  const username = "developer";
+  const password = "CRnUhSiD2SPU";
   const credentials = btoa(`${username}:${password}`);
-console.log(username);
-console.log(password);
-console.log(credentials);
+
   const postData = [
     {
       first_name: name,
@@ -209,11 +207,12 @@ console.log(credentials);
 
   try {
     await fetch(url, options)
-      .then(async (response) => {
+      .then((response) => {
         if (!response.ok) {
-          const errorText = await response.text();
           throw new Error(
-            `Error occurred while creating lead in dialer CRM: [${response.status}] ${errorText}`
+            "Error occured while creating lead in dialer CRM:::::::: [" +
+              response.status +
+              "]"
           );
         }
         return response.json();
