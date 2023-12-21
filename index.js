@@ -1,7 +1,7 @@
 const express = require('express');
 const app = require('./sheets_proccessor');
 
-const port =  8080;
+const port = process.env.PORT || 80;
 
 
 
