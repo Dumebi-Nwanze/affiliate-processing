@@ -159,8 +159,8 @@ async function pushToDialer(
   const url = "http://mc.td.commpeak.com/api/leads";
   const urlmass = "https://mc.td.commpeak.com/api/campaign-leads/mass-assign";
 
-  const username = "developer";
-  const password = "CRnUhSiD2SPU";
+  const username = "developer2";
+  const password = "QddYW1F3wVOx";
   const credentials = btoa(`${username}:${password}`);
 
   const postData = [
@@ -508,7 +508,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
       suffix = suffices[0][adminUuid];
     }
  
-    uuid = crypto.randomUUID().split('-').slice(0, -1).join('-') + '-' + suffix;
+    //uuid = crypto.randomUUID().split('-').slice(0, -1).join('-') + '-' + suffix;
   } catch (error) {
     console.error("Error reading or parsing suffices:", error);
     return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
@@ -522,9 +522,13 @@ app.post("/create-lead", verifyToken, async (req, res) => {
       console.error("Error:", error.message);
     });
 
-  if (!uuid) {
-    console.log("INTERNAL SERVER ERROR:::CANT CREATE UUID");
-    return res.status(500).send("INTERNAL SERVER ERROR:::CANT CREATE UUID");
+  // if (!uuid) {
+  //   console.log("INTERNAL SERVER ERROR:::CANT CREATE UUID");
+  //   return res.status(500).send("INTERNAL SERVER ERROR:::CANT CREATE UUID");
+  // }
+  if (!suffix) {
+    console.log("INTERNAL SERVER ERROR:::CANT READ OR CREATE SUFFIX");
+    return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ OR CREATE SUFFIX");
   }
   (async () => {
     try {
@@ -549,14 +553,14 @@ app.post("/create-lead", verifyToken, async (req, res) => {
             branchUuid: branchUuid,
             password: password,
             account: {
-              uuid: uuid,
+              //uuid: uuid,
               email: email,
               name: name,
               surname: surname,
               phone: phoneNumber,
               partnerId: 76,
               leadInfo: {
-                leadSource: purchasesite,
+                leadSource: `purchasesite-${suffix}`,
               },
             },
 
@@ -678,19 +682,19 @@ app.get("/leads", verifyToken, async (req, res) => {
 
     console.log("All leads:", allLeads.length);
 
-    const filteredLeads = allLeads.filter((lead) => {
-      const leadSuffix = lead.uuid.slice(-12);
-      return leadSuffix === suffix;
-    });
+    // const filteredLeads = allLeads.filter((lead) => {
+    //   const leadSuffix = lead.uuid.slice(-12);
+    //   return leadSuffix === suffix;
+    // });
     try {
       const deposits = await getDeposits();
       allDeposits.push(...deposits);
     } catch (e) {
       console.log("Error:::::Couldn't get deposits");
-      res.status(500).send("Error:::::Couldn't get deposits");
+     return res.status(500).send("Error:::::Couldn't get deposits");
     }
     const filteredDeposits = allDeposits.filter((deposit) => {
-      const leadSuffix = deposit.accountUuid.slice(-12);
+      const leadSuffix = deposit.accountLeadSource.split("-")[1];
       return leadSuffix === suffix && isEarliestCreatedAtForAccount(deposit);
     });
     //console.log("Filtered leads:", filteredLeads.length);
@@ -715,8 +719,8 @@ app.get("/leads", verifyToken, async (req, res) => {
   }
 });
 
-app.get("/", (req,res)=>{
-  return res.json({message:"hello"})
-})
+// app.get("/", (req,res)=>{
+//   return res.json({message:"hello"})
+// })
 
 module.exports = app;
