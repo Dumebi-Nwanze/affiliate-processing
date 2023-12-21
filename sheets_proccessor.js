@@ -407,7 +407,7 @@ function formatDate(date) {
   return new Date(fyear, fmonth - 1, fday, hours, minutes, seconds).getTime();
 }
 function generateRandomString() {
-  const characters = '0123456789abcdefghijklmnopqrstuvwxyz';
+  const characters = '0123456789';
   let randomString = '';
 
   for (let i = 0; i < 12; i++) {
