@@ -160,9 +160,11 @@ async function pushToDialer(
   const urlmass = "https://mc.td.commpeak.com/api/campaign-leads/mass-assign";
 
   const username = "developer2";
-  const password = "PPeEM45d9J2A";
+  const password = "KiT9Nd18Y3xo";
   const credentials = btoa(`${username}:${password}`);
-
+console.log(username);
+console.log(password);
+console.log(credentials);
   const postData = [
     {
       first_name: name,
