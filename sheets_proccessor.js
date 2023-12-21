@@ -715,4 +715,8 @@ app.get("/leads", verifyToken, async (req, res) => {
   }
 });
 
+app.get("/", (req,res)=>{
+  return res.json({message:"hello"})
+})
+
 module.exports = app;
