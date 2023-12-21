@@ -412,6 +412,7 @@ app.post("/getAccessToken", async (req, res) => {
 
   // Retrieve user data from the JSON file
   const users = await readUsersFile();
+  console.log(users);
 
   // Find user by username
   const user = users.find((u) => u.username === username);
