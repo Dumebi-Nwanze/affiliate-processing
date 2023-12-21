@@ -406,7 +406,17 @@ function formatDate(date) {
   const [hours, minutes, seconds] = timePart.split(":").map(Number);
   return new Date(fyear, fmonth - 1, fday, hours, minutes, seconds).getTime();
 }
+function generateRandomString() {
+  const characters = '0123456789abcdefghijklmnopqrstuvwxyz';
+  let randomString = '';
 
+  for (let i = 0; i < 12; i++) {
+    const randomIndex = Math.floor(Math.random() * characters.length);
+    randomString += characters.charAt(randomIndex);
+  }
+
+  return randomString;
+}
 app.post("/getAccessToken", async (req, res) => {
   const { username, password } = req.body;
   console.log(req.body);
@@ -490,7 +500,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
         .send("INTERNAL SERVER ERROR:::ADMIN UUID WAS NOT READ");
     }
     if (!suffices[0][adminUuid]) {
-      suffix = crypto.generateKey("hmac", { length: 12 });
+      suffix = generateRandomString();
       suffices[0][adminUuid] = suffix;
 
       fs.writeFileSync("./suffix.json", JSON.stringify(suffices));
