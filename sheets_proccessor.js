@@ -594,9 +594,9 @@ app.post("/create-lead", verifyToken, async (req, res) => {
             //   "An error occurred: Status Returned From Match Trade:::::::::",
             //   error.response.data
             // );
-            // throw new Error(
-            //   `An error occurred: Status Returned From Match Trade:::::::::${error.response.data}`
-            // );
+            throw new Error(
+              error
+            );
           }
         }
       });
