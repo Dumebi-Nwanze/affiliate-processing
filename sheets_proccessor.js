@@ -336,14 +336,14 @@ const getDeposits = async (date) => {
   const response = await axios.get(apiUrl, { headers });
 
   console.log(response.data.content);
-  return response.data.content
+  return response.data.content;
 };
 
 /**    Push to Dialer Code End */
 
 function verifyToken(req, res, next) {
   const token = req.header("Authorization");
-console.log(token);
+  console.log(token);
   if (!token) {
     return res.status(401).json({ message: "Unauthorized - Missing token" });
   }
@@ -409,8 +409,8 @@ function formatDate(date) {
   return new Date(fyear, fmonth - 1, fday, hours, minutes, seconds).getTime();
 }
 function generateRandomString() {
-  const characters = '0123456789';
-  let randomString = '';
+  const characters = "0123456789";
+  let randomString = "";
 
   for (let i = 0; i < 12; i++) {
     const randomIndex = Math.floor(Math.random() * characters.length);
@@ -428,7 +428,7 @@ app.post("/getAccessToken", async (req, res) => {
   console.log(users);
 
   // Find user by username
-  const user = users.filter((u) => u.username === username)[0]??null;
+  const user = users.filter((u) => u.username === username)[0] ?? null;
 
   console.log(user);
 
@@ -508,7 +508,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
     } else {
       suffix = suffices[0][adminUuid];
     }
- 
+
     //uuid = crypto.randomUUID().split('-').slice(0, -1).join('-') + '-' + suffix;
   } catch (error) {
     console.error("Error reading or parsing suffices:", error);
@@ -529,7 +529,9 @@ app.post("/create-lead", verifyToken, async (req, res) => {
   // }
   if (!suffix) {
     console.log("INTERNAL SERVER ERROR:::CANT READ OR CREATE SUFFIX");
-    return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ OR CREATE SUFFIX");
+    return res
+      .status(500)
+      .send("INTERNAL SERVER ERROR:::CANT READ OR CREATE SUFFIX");
   }
   (async () => {
     try {
@@ -558,6 +560,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
               name: name,
               surname: surname,
               phone: phoneNumber,
+              country: country,
               partnerId: 76,
               leadInfo: {
                 leadSource: `${purchasesite}-${suffix}`,
@@ -569,7 +572,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
           console.log(matchTradeData);
           try {
             const response = await sendLeadToMatchTrade(matchTradeData);
-            
+
             if (response.status === 200) {
               console.log({
                 message: "Match Trade Account Created successfully",
@@ -582,11 +585,15 @@ app.post("/create-lead", verifyToken, async (req, res) => {
             } else {
               console.log("An error occurred while creating an account");
               console.log("Error:", response);
-              res.status(500).send({ error: "INTERNAL_SERVER_ERROR", message: response });
+              res
+                .status(500)
+                .send({ error: "INTERNAL_SERVER_ERROR", message: response });
             }
           } catch (error) {
             console.error("An error occurred: ", error.message);
-            res.status(500).send({ error: "INTERNAL_SERVER_ERROR", message: error.message });
+            res
+              .status(500)
+              .send({ error: "INTERNAL_SERVER_ERROR", message: error.message });
           }
         }
       });
@@ -601,7 +608,7 @@ function isValidISOString(dateString) {
   const date = new Date(dateString);
   return date instanceof Date && !isNaN(date);
 }
-function isEarliestCreatedAtForAccount(deposit,allDeposits) {
+function isEarliestCreatedAtForAccount(deposit, allDeposits) {
   // Find the lead with the earliest createdAt for the same accountUuid
   const earliestCreatedAtDeposit = allDeposits.reduce(
     (earliestDeposit, otherDeposit) => {
@@ -650,7 +657,8 @@ function getEarliestDoneDeposits(deposits, suffix) {
 
     // Filter deposits with status "DONE" and matching suffix
     const doneDeposits = depositsForAccount.filter(
-      (deposit) => deposit.status === "DONE" && deposit.accountLeadSource.includes(suffix)
+      (deposit) =>
+        deposit.status === "DONE" && deposit.accountLeadSource.includes(suffix)
     );
 
     if (doneDeposits.length > 0) {
@@ -670,11 +678,9 @@ function getEarliestDoneDeposits(deposits, suffix) {
 app.get("/leads", verifyToken, async (req, res) => {
   const { adminUuid, date } = req.body;
   console.log(req.body);
-  if (!adminUuid||isValidISOString(date)===false) {
+  if (!adminUuid || isValidISOString(date) === false) {
     console.log("DATE OR ADMIN UUID IS INCORRECT");
-    return res
-      .status(400)
-      .send("BAD REQUEST:::::CHECK REQUEST BODY");
+    return res.status(400).send("BAD REQUEST:::::CHECK REQUEST BODY");
   }
   let suffix;
   try {
@@ -684,7 +690,7 @@ app.get("/leads", verifyToken, async (req, res) => {
       console.log("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
       return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
     }
-   
+
     if (!suffices[0][adminUuid]) {
       console.log("ADMIN UUID IS NOT FOUND IN STORE");
       return res.status(400).send("ADMIN UUID IS NOT FOUND IN STORE");
@@ -705,49 +711,12 @@ app.get("/leads", verifyToken, async (req, res) => {
     });
   const allLeads = [];
   const allDeposits = [];
-  
+
   try {
-    // let page = 0;
+    const deposits = await getDeposits(date);
+    allDeposits.push(...deposits);
 
-    // while (true) {
-    //   const leads = await getLeadsFromMatchTrade(page);
-
-    //   if (!leads || leads.data.length === 0) {
-    //     // Break the loop if there are no more leads
-    //     break;
-    //   }
-
-    //   allLeads.push(...leads);
-    //   page++;
-
-    //   if (leads.data.length < 2000) {
-    //     // Break the loop if the number of leads is less than 2000
-    //     break;
-    //   }
-    // }
-
-    // console.log("All leads:", allLeads.length);
-
-    // const filteredLeads = allLeads.filter((lead) => {
-    //   const leadSuffix = lead.uuid.slice(-12);
-    //   return leadSuffix === suffix;
-    // });
-    
-      const deposits = await getDeposits(date);
-      allDeposits.push(...deposits);
-  
-    // const filteredDeposits = allDeposits.filter((deposit) => {
-    //   const leadSuffix = deposit.accountLeadSource?.split("-")[1];
-    //   // console.log("Lead suffix::::::::::::",leadSuffix);
-    //   // console.log("Lead source::::::::::::",deposit.accountLeadSource);
-    //   // console.log("Lead source split::::::::::::",deposit.accountLeadSource?.split("-"));
-    //   // console.log("suffix::::::::::::",suffix);
-    //   const earliest = isEarliestCreatedAtForAccount(deposit, allDeposits);
-    //   console.log("Earliset::::::::::::",earliest);
-    //   return leadSuffix === suffix && earliest;
-    // });
-    const filteredDeposits = getEarliestDoneDeposits(allDeposits, suffix)
-    //console.log("Filtered leads:", filteredLeads.length);
+    const filteredDeposits = getEarliestDoneDeposits(allDeposits, suffix);
     console.log("Filtered deposits:", filteredDeposits.length);
     const formattedDeposits = [];
     filteredDeposits.forEach((deposit) => {

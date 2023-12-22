@@ -547,6 +547,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
     branchUuid,
     offerUuid,
     password,
+    leadProviderId,
   } = req.body;
   console.log(req.body);
   let adminUuid;
@@ -659,6 +660,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
               surname: surname,
               phone: phoneNumber,
               partnerId: 76,
+              leadProviderUuid:leadProviderId,
               leadInfo: {
                 leadSource: `${purchasesite}-${suffix}`,
               },
