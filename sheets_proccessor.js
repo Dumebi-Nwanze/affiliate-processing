@@ -696,9 +696,12 @@ app.get("/leads", verifyToken, async (req, res) => {
 
     Object.keys(keys).forEach((key) => {
       if (keys[key] === adminUuid) {
+        console.log(keys[key]);
         source = key;
       }
     });
+
+    
     
     if (!source) {
       console.log("ADMIN UUID IS NOT FOUND IN STORE");
