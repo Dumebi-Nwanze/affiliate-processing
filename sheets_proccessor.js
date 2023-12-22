@@ -734,7 +734,7 @@ app.get("/leads", verifyToken, async (req, res) => {
       formattedDeposits.push({
         uuid: deposit.uuid,
         accountUuid: deposit.accountUuid,
-        created: deposit.created,
+        "ftd_date": deposit.created,
         amount: deposit.amount,
         status: deposit.status,
         email: deposit.email,
