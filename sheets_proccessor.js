@@ -579,6 +579,8 @@ app.post("/create-lead", verifyToken, async (req, res) => {
                 responseData: response,
               });
               res.status(200).send({
+                statusCode: response.status,
+                status: "SUCCESS",
                 message: "Store this admin uuid in a safe place",
                 adminUuid: adminUuid,
               });
@@ -631,7 +633,7 @@ function isEarliestCreatedAtForAccount(deposit, allDeposits) {
     new Date(deposit.created) === new Date(earliestCreatedAtDeposit.created)
   );
 }
-function getEarliestDoneDeposits(deposits, suffix) {
+function getFirstDoneDeposits(deposits, suffix) {
   // Create an object to store deposits in buckets based on accountUuid
   const depositBuckets = {};
 
@@ -658,7 +660,7 @@ function getEarliestDoneDeposits(deposits, suffix) {
     // Filter deposits with status "DONE" and matching suffix
     const doneDeposits = depositsForAccount.filter(
       (deposit) =>
-        deposit.status === "DONE" && deposit.accountLeadSource.includes(suffix)
+        deposit.status === "DONE" && deposit.accountLeadSource?.includes(suffix)
     );
 
     if (doneDeposits.length > 0) {
@@ -716,7 +718,7 @@ app.get("/leads", verifyToken, async (req, res) => {
     const deposits = await getDeposits(date);
     allDeposits.push(...deposits);
 
-    const filteredDeposits = getEarliestDoneDeposits(allDeposits, suffix);
+    const filteredDeposits = getFirstDoneDeposits(allDeposits, suffix);
     console.log("Filtered deposits:", filteredDeposits.length);
     const formattedDeposits = [];
     filteredDeposits.forEach((deposit) => {
