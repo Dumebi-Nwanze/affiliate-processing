@@ -94,7 +94,10 @@ async function sendLeadToMatchTrade(data) {
     };
   } catch (error) {
     console.error("Error:", error.message);
-    throw error;
+    return {
+      message: error.message,
+      data: response,
+    };
   }
 }
 async function getLeadsFromMatchTrade(page) {

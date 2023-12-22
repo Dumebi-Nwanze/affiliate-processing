@@ -114,7 +114,10 @@ async function sendLeadToMatchTrade(data) {
     };
   } catch (error) {
     console.error("Error:", error.message);
-    throw error;
+    return {
+      message: error.message,
+      data: response,
+    };
   }
 }
 async function getLeadsFromMatchTrade(page) {
@@ -150,11 +153,10 @@ async function pushToDialer(
   name,
   surname,
   phoneNumber,
-  regdate,
   source,
   purchasesite,
   supportsite,
-  campaignid
+  country
 ) {
   console.log("Pushing to dialer");
   let date_ob = new Date();
@@ -182,9 +184,7 @@ async function pushToDialer(
   const username = "developer2";
   const password = "QddYW1F3wVOx";
   const credentials = btoa(`${username}:${password}`);
-  console.log(username);
-  console.log(password);
-  console.log(credentials);
+
   const postData = [
     {
       first_name: name,
@@ -195,7 +195,7 @@ async function pushToDialer(
       phone_normalized2: phoneNumber,
       address1: "string",
       address2: "string",
-      country: "Turkey",
+      country: country,
       state: "string",
       city: "string",
       zip: "string",
@@ -546,7 +546,6 @@ app.post("/create-lead", verifyToken, async (req, res) => {
     purchasesite,
     supportsite,
     country,
-    campaignid,
     branchUuid,
     offerUuid,
     password,
@@ -555,8 +554,8 @@ app.post("/create-lead", verifyToken, async (req, res) => {
   let adminUuid;
   let suffix;
   try {
-      var keys = await readKeysFromFB();
-    
+    var keys = await readKeysFromFB();
+
     adminUuid =
       keys.filter((key) => Object.keys(key)[0] === purchasesite)[0]?.[
         purchasesite
@@ -582,31 +581,39 @@ app.post("/create-lead", verifyToken, async (req, res) => {
       .send({ message: "INTERNAL SERVER ERROR:::CANT READ KEYS", error });
   }
   try {
-    var suffices = await readSufficesFromFB()
+    var suffices = await readSufficesFromFB();
 
-    if (!suffices) {
-      console.log("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
-      return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
-    }
     if (!adminUuid) {
       console.log("INTERNAL SERVER ERROR:::ADMIN UUID WAS NOT READ");
       return res
         .status(500)
         .send("INTERNAL SERVER ERROR:::ADMIN UUID WAS NOT READ");
     }
-    if (!suffices[0][adminUuid]) {
+    suffix =
+      suffices.filter((s) => Object.keys(s)[0] === adminUuid)[0]?.[adminUuid] ??
+      null;
+    if (!suffix) {
       suffix = generateRandomString();
-      suffices[0][adminUuid] = suffix;
-
-      fs.writeFileSync("./suffix.json", JSON.stringify(suffices));
-    } else {
-      suffix = suffices[0][adminUuid];
+      try {
+        await writeSuffixToFB({ [adminUuid]: suffix });
+      } catch (error) {
+        console.log(
+          "INTERNAL SERVER ERROR:::CANT WRITE SUFFICES:::::::",
+          error
+        );
+        return res
+          .status(500)
+          .send({
+            message: "INTERNAL SERVER ERROR:::CANT WRITE SUFFICES",
+            error,
+          });
+      }
     }
-
-    //uuid = crypto.randomUUID().split('-').slice(0, -1).join('-') + '-' + suffix;
   } catch (error) {
-    console.error("Error reading or parsing suffices:", error);
-    return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
+    console.log("INTERNAL SERVER ERROR:::CANT READ SUFFICES:::::::", error);
+    return res
+      .status(500)
+      .send({ message: "INTERNAL SERVER ERROR:::CANT READ SUFFICES", error });
   }
   await getToken()
     .then((accessToken) => {
@@ -634,11 +641,10 @@ app.post("/create-lead", verifyToken, async (req, res) => {
         name,
         surname,
         phoneNumber,
-        regdate,
         source,
         purchasesite,
         supportsite,
-        campaignid
+        country
       ).then(async (response) => {
         console.log("Did Dialer succeed: ", response);
 
@@ -650,14 +656,13 @@ app.post("/create-lead", verifyToken, async (req, res) => {
             branchUuid: branchUuid,
             password: password,
             account: {
-              //uuid: uuid,
               email: email,
               name: name,
               surname: surname,
               phone: phoneNumber,
               partnerId: 76,
               leadInfo: {
-                leadSource: `purchasesite-${suffix}`,
+                leadSource: `${purchasesite}-${suffix}`,
               },
             },
 
