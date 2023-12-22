@@ -9,7 +9,6 @@ const bcrypt = require("bcrypt");
 const fs = require("fs");
 const {
   initializeApp,
-  applicationDefault,
   cert,
 } = require("firebase-admin/app");
 const {
@@ -36,6 +35,7 @@ app.use(express.json());
 
 initializeApp({
   credential: cert(serviceAccount),
+  databaseURL: ""
 });
 
 const db = getFirestore();
@@ -392,29 +392,28 @@ async function readUsersFromFB() {
   //   return [];
   // }
   const users = [];
-  try {
+
+  
     const snapshot = await db.collection("users").get();
     snapshot.forEach((doc) => {
       users.push(doc.data());
     });
     return users;
-  } catch (e) {
-    console.log("Error while reading users from Firebase store");
-    throw new Error("Error while reading users from Firebase store");
-  }
+ 
 }
 
 async function readKeysFromFB() {
   const keys = [];
   try {
     const snapshot = await db.collection("keys").get();
+    console.log(db);
     snapshot.forEach((doc) => {
       keys.push(doc.data());
     });
     return users;
   } catch (e) {
     console.log("Error while reading keys from Firebase store");
-    throw new Error("Error while reading keys from Firebase store");
+    //throw new Error("Error while reading keys from Firebase store");
   }
 }
 async function readSufficesFromFB() {
@@ -815,4 +814,4 @@ app.get("/leads", verifyToken, async (req, res) => {
 //   return res.json({message:"hello"})
 // })
 
-module.exports = app;
+module.exports = {app, readKeysFromFB, readUsersFromFB, readSufficesFromFB};
