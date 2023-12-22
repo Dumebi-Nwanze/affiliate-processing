@@ -132,11 +132,10 @@ async function pushToDialer(
   name,
   surname,
   phoneNumber,
-  regdate,
   source,
   purchasesite,
   supportsite,
-  campaignid
+  country
 ) {
   console.log("Pushing to dialer");
   let date_ob = new Date();
@@ -164,9 +163,7 @@ async function pushToDialer(
   const username = "developer2";
   const password = "QddYW1F3wVOx";
   const credentials = btoa(`${username}:${password}`);
-console.log(username)
-console.log(password)
-console.log(credentials)
+
   const postData = [
     {
       first_name: name,
@@ -177,7 +174,7 @@ console.log(credentials)
       phone_normalized2: phoneNumber,
       address1: "string",
       address2: "string",
-      country: "Turkey",
+      country: country,
       state: "string",
       city: "string",
       zip: "string",
@@ -320,7 +317,7 @@ console.log(credentials)
 
 //Get Deposits
 
-const getDeposits = async () => {
+const getDeposits = async (date) => {
   await getToken()
     .then((accessToken) => {
       //console.log("Access Token:", accessToken);
@@ -330,7 +327,7 @@ const getDeposits = async () => {
       console.error("Error:", error.message);
     });
   const servertimenow = new Date().toISOString();
-  const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/payment/api/partner/76/deposits/deposit-view-model?query=${"@"}&from=2023-12-10T09:57:26.000Z&to=${servertimenow}&sort%5Bsorted%5D=true&sort%5Bunsorted%5D=true&sort%5Bempty%5D=true&pageSize=20&pageNumber=0&paged=true&unpaged=true&offset=0`;
+  const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/payment/api/partner/76/deposits/deposit-view-model?query=&from=${date}&to=${servertimenow}&sort%5Bsorted%5D=true&sort%5Bunsorted%5D=true&sort%5Bempty%5D=true&pageSize=10&pageNumber=64&paged=true&unpaged=true&size=100`;
   const headers = {
     accept: "*/*",
     Authorization: `Bearer ${authToken}`,
@@ -458,11 +455,10 @@ app.post("/create-lead", verifyToken, async (req, res) => {
     name,
     surname,
     phoneNumber,
-    regdate,
     source,
     purchasesite,
     supportsite,
-    campaignid,
+    country,
     branchUuid,
     offerUuid,
     password,
@@ -542,11 +538,10 @@ app.post("/create-lead", verifyToken, async (req, res) => {
         name,
         surname,
         phoneNumber,
-        regdate,
         source,
         purchasesite,
         supportsite,
-        campaignid
+        country
       ).then(async (response) => {
         console.log("Did Dialer succeed: ", response);
 
@@ -565,7 +560,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
               phone: phoneNumber,
               partnerId: 76,
               leadInfo: {
-                leadSource: `purchasesite-${suffix}`,
+                leadSource: `${purchasesite}-${suffix}`,
               },
             },
 
@@ -602,10 +597,19 @@ app.post("/create-lead", verifyToken, async (req, res) => {
     }
   })();
 });
-
+function isValidISOString(dateString) {
+  const date = new Date(dateString);
+  return date instanceof Date && !isNaN(date);
+}
 app.get("/leads", verifyToken, async (req, res) => {
-  const { adminUuid } = req.body;
+  const { adminUuid, date } = req.body;
   console.log(req.body);
+  if (!adminUuid||isValidISOString(date)===false) {
+    console.log("DATE OR ADMIN UUID IS INCORRECT");
+    return res
+      .status(400)
+      .send("BAD REQUEST:::::CHECK REQUEST BODY");
+  }
   let suffix;
   try {
     var suffices = JSON.parse(fs.readFileSync("./suffix.json"));
@@ -614,12 +618,7 @@ app.get("/leads", verifyToken, async (req, res) => {
       console.log("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
       return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
     }
-    if (!adminUuid) {
-      console.log("PROVIDE A VALID ADMIN UUID");
-      return res
-        .status(400)
-        .send("PROVIDE A VALID ADMIN UUID");
-    }
+   
     if (!suffices[0][adminUuid]) {
       console.log("ADMIN UUID IS NOT FOUND IN STORE");
       return res.status(400).send("ADMIN UUID IS NOT FOUND IN STORE");
@@ -690,7 +689,7 @@ app.get("/leads", verifyToken, async (req, res) => {
     //   return leadSuffix === suffix;
     // });
     
-      const deposits = await getDeposits();
+      const deposits = await getDeposits(date);
       allDeposits.push(...deposits);
   
     const filteredDeposits = allDeposits.filter((deposit) => {
