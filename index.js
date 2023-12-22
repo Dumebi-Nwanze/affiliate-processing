@@ -1,6 +1,5 @@
 const express = require('express');
-//const app = require('./sheets_proccessor');
-const app = require("./sheets_processor_copy")
+const app = require('./sheets_proccessor');
 
 const port = process.env.PORT || 80;
 
