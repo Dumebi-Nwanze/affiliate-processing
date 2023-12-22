@@ -694,6 +694,8 @@ app.get("/leads", verifyToken, async (req, res) => {
   
     const filteredDeposits = allDeposits.filter((deposit) => {
       const leadSuffix = deposit.accountLeadSource?.split("-")[1];
+      console.log("Lead suffix::::::::::::",leadSuffix);
+      console.log("suffix::::::::::::",suffix);
       return leadSuffix === suffix && isEarliestCreatedAtForAccount(deposit);
     });
     //console.log("Filtered leads:", filteredLeads.length);
