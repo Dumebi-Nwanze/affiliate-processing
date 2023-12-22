@@ -93,10 +93,9 @@ async function sendLeadToMatchTrade(data) {
       data: response.data,
     };
   } catch (error) {
-    console.error("Error:", error.message);
+    console.error("Error:", error.response.data.message);
     return {
-      message: error.message,
-      data: response,
+      data: error.response.data,
     };
   }
 }
@@ -586,15 +585,18 @@ app.post("/create-lead", verifyToken, async (req, res) => {
               });
             } else {
               console.log("An error occurred while creating an account");
+              throw new Error({
+                response
+              })
             }
           } catch (error) {
-            console.error(
-              "An error occurred: Status Returned From Match Trade:::::::::",
-              error.response.data
-            );
-            throw new Error(
-              `An error occurred: Status Returned From Match Trade:::::::::${error.response.data}`
-            );
+            // console.error(
+            //   "An error occurred: Status Returned From Match Trade:::::::::",
+            //   error.response.data
+            // );
+            // throw new Error(
+            //   `An error occurred: Status Returned From Match Trade:::::::::${error.response.data}`
+            // );
           }
         }
       });
