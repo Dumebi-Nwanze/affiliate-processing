@@ -113,10 +113,9 @@ async function sendLeadToMatchTrade(data) {
       data: response.data,
     };
   } catch (error) {
-    console.error("Error:", error.message);
+    console.error("Error:", error.response.data.message);
     return {
-      message: error.message,
-      data: response,
+      data: error.response.data,
     };
   }
 }
@@ -671,6 +670,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
           console.log(matchTradeData);
           try {
             const response = await sendLeadToMatchTrade(matchTradeData);
+            
             if (response.status === 200) {
               console.log({
                 message: "Match Trade Account Created successfully",
@@ -682,15 +682,12 @@ app.post("/create-lead", verifyToken, async (req, res) => {
               });
             } else {
               console.log("An error occurred while creating an account");
+              console.log("Error:", response);
+              res.status(500).send({ error: "INTERNAL_SERVER_ERROR", message: response });
             }
           } catch (error) {
-            console.error(
-              "An error occurred: Status Returned From Match Trade:::::::::",
-              error.response.data
-            );
-            throw new Error(
-              `An error occurred: Status Returned From Match Trade:::::::::${error.response.data}`
-            );
+            console.error("An error occurred: ", error.message);
+            res.status(500).send({ error: "INTERNAL_SERVER_ERROR", message: error.message });
           }
         }
       });
@@ -706,26 +703,24 @@ app.get("/leads", verifyToken, async (req, res) => {
   const { adminUuid } = req.body;
   console.log(req.body);
   let suffix;
+  if (!adminUuid) {
+    console.log("PROVIDE A VALID ADMIN UUID");
+    return res.status(400).send("PROVIDE A VALID ADMIN UUID");
+  }
   try {
-    var suffices = JSON.parse(fs.readFileSync("./suffix.json"));
-
-    if (!suffices) {
-      console.log("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
-      return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
-    }
-    if (!adminUuid) {
-      console.log("PROVIDE A VALID ADMIN UUID");
-      return res.status(400).send("PROVIDE A VALID ADMIN UUID");
-    }
-    if (!suffices[0][adminUuid]) {
+    var suffices = await readSufficesFromFB();
+    suffix =
+      suffices.filter((s) => Object.keys(s)[0] === adminUuid)[0]?.[adminUuid] ??
+      null;
+    if (!suffix) {
       console.log("ADMIN UUID IS NOT FOUND IN STORE");
       return res.status(400).send("ADMIN UUID IS NOT FOUND IN STORE");
-    } else {
-      suffix = suffices[0][adminUuid];
-    }
+    } 
   } catch (error) {
-    console.error("Error reading or parsing suffices:", error);
-    return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
+    console.log("INTERNAL SERVER ERROR:::CANT READ SUFFICES:::::::", error);
+    return res
+      .status(500)
+      .send({ message: "INTERNAL SERVER ERROR:::CANT READ SUFFICES", error });
   }
   await getToken()
     .then((accessToken) => {
