@@ -587,7 +587,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
             } else {
               console.log("An error occurred while creating an account");
               console.log("Error:", response);
-          
+              res.status(500).send({ error: "INTERNAL_SERVER_ERROR", message: response });
             }
           } catch (error) {
             console.error("An error occurred: ", error.message);
