@@ -595,7 +595,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
             //   error.response.data
             // );
             throw new Error(
-              error
+              error.response.data
             );
           }
         }
