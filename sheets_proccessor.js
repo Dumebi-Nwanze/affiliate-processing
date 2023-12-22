@@ -574,6 +574,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
           console.log(matchTradeData);
           try {
             const response = await sendLeadToMatchTrade(matchTradeData);
+            
             if (response.status === 200) {
               console.log({
                 message: "Match Trade Account Created successfully",
@@ -585,18 +586,12 @@ app.post("/create-lead", verifyToken, async (req, res) => {
               });
             } else {
               console.log("An error occurred while creating an account");
-              throw new Error({
-                response
-              })
+              console.log("Error:", response);
+          
             }
           } catch (error) {
-            // console.error(
-            //   "An error occurred: Status Returned From Match Trade:::::::::",
-            //   error.response.data
-            // );
-            throw new Error(
-              error.response.data
-            );
+            console.error("An error occurred: ", error.message);
+            res.status(500).send({ error: "INTERNAL_SERVER_ERROR", message: error.message });
           }
         }
       });
