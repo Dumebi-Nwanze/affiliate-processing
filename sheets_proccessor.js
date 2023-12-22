@@ -487,33 +487,33 @@ app.post("/create-lead", verifyToken, async (req, res) => {
     console.error("Error reading or parsing keys:", error);
     return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ KEYS");
   }
-  try {
-    var suffices = JSON.parse(fs.readFileSync("./suffix.json"));
+  // try {
+  //   var suffices = JSON.parse(fs.readFileSync("./suffix.json"));
 
-    if (!suffices) {
-      console.log("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
-      return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
-    }
-    if (!adminUuid) {
-      console.log("INTERNAL SERVER ERROR:::ADMIN UUID WAS NOT READ");
-      return res
-        .status(500)
-        .send("INTERNAL SERVER ERROR:::ADMIN UUID WAS NOT READ");
-    }
-    if (!suffices[0][adminUuid]) {
-      suffix = generateRandomString();
-      suffices[0][adminUuid] = suffix;
+  //   if (!suffices) {
+  //     console.log("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
+  //     return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
+  //   }
+  //   if (!adminUuid) {
+  //     console.log("INTERNAL SERVER ERROR:::ADMIN UUID WAS NOT READ");
+  //     return res
+  //       .status(500)
+  //       .send("INTERNAL SERVER ERROR:::ADMIN UUID WAS NOT READ");
+  //   }
+  //   if (!suffices[0][adminUuid]) {
+  //     suffix = generateRandomString();
+  //     suffices[0][adminUuid] = suffix;
 
-      fs.writeFileSync("./suffix.json", JSON.stringify(suffices));
-    } else {
-      suffix = suffices[0][adminUuid];
-    }
+  //     fs.writeFileSync("./suffix.json", JSON.stringify(suffices));
+  //   } else {
+  //     suffix = suffices[0][adminUuid];
+  //   }
 
-    //uuid = crypto.randomUUID().split('-').slice(0, -1).join('-') + '-' + suffix;
-  } catch (error) {
-    console.error("Error reading or parsing suffices:", error);
-    return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
-  }
+  //   //uuid = crypto.randomUUID().split('-').slice(0, -1).join('-') + '-' + suffix;
+  // } catch (error) {
+  //   console.error("Error reading or parsing suffices:", error);
+  //   return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
+  // }
   await getToken()
     .then((accessToken) => {
       console.log("Access Token:", accessToken);
@@ -527,12 +527,12 @@ app.post("/create-lead", verifyToken, async (req, res) => {
   //   console.log("INTERNAL SERVER ERROR:::CANT CREATE UUID");
   //   return res.status(500).send("INTERNAL SERVER ERROR:::CANT CREATE UUID");
   // }
-  if (!suffix) {
-    console.log("INTERNAL SERVER ERROR:::CANT READ OR CREATE SUFFIX");
-    return res
-      .status(500)
-      .send("INTERNAL SERVER ERROR:::CANT READ OR CREATE SUFFIX");
-  }
+  // if (!suffix) {
+  //   console.log("INTERNAL SERVER ERROR:::CANT READ OR CREATE SUFFIX");
+  //   return res
+  //     .status(500)
+  //     .send("INTERNAL SERVER ERROR:::CANT READ OR CREATE SUFFIX");
+  // }
   (async () => {
     try {
       await pushToDialer(
@@ -563,7 +563,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
               country: country,
               partnerId: 76,
               leadInfo: {
-                leadSource: `${purchasesite}-${suffix}`,
+                leadSource: purchasesite,
               },
             },
 
@@ -633,7 +633,7 @@ function isEarliestCreatedAtForAccount(deposit, allDeposits) {
     new Date(deposit.created) === new Date(earliestCreatedAtDeposit.created)
   );
 }
-function getFirstDoneDeposits(deposits, suffix) {
+function getFirstDoneDeposits(deposits, source) {
   // Create an object to store deposits in buckets based on accountUuid
   const depositBuckets = {};
 
@@ -660,7 +660,7 @@ function getFirstDoneDeposits(deposits, suffix) {
     // Filter deposits with status "DONE" and matching suffix
     const doneDeposits = depositsForAccount.filter(
       (deposit) =>
-        deposit.status === "DONE" && deposit.accountLeadSource?.includes(suffix)
+        deposit.status === "DONE" && deposit.accountLeadSource?.includes(source)
     );
 
     if (doneDeposits.length > 0) {
@@ -679,6 +679,7 @@ function getFirstDoneDeposits(deposits, suffix) {
 
 app.get("/leads", verifyToken, async (req, res) => {
   const { adminUuid, date } = req.body;
+  let source;
   console.log(req.body);
   if (!adminUuid || isValidISOString(date) === false) {
     console.log("DATE OR ADMIN UUID IS INCORRECT");
@@ -686,18 +687,22 @@ app.get("/leads", verifyToken, async (req, res) => {
   }
   let suffix;
   try {
-    var suffices = JSON.parse(fs.readFileSync("./suffix.json"));
+    var keys = JSON.parse(fs.readFileSync("./keys.json"));
 
-    if (!suffices) {
-      console.log("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
-      return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
+    if (!keys) {
+      console.log("INTERNAL SERVER ERROR:::CANT READ KEYS");
+      return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ KEYS");
     }
 
-    if (!suffices[0][adminUuid]) {
+    Object.keys(keys).forEach((key) => {
+      if (keys[key] === adminUuid) {
+        source = key;
+      }
+    });
+    
+    if (!source) {
       console.log("ADMIN UUID IS NOT FOUND IN STORE");
       return res.status(400).send("ADMIN UUID IS NOT FOUND IN STORE");
-    } else {
-      suffix = suffices[0][adminUuid];
     }
   } catch (error) {
     console.error("Error reading or parsing suffices:", error);
@@ -718,7 +723,7 @@ app.get("/leads", verifyToken, async (req, res) => {
     const deposits = await getDeposits(date);
     allDeposits.push(...deposits);
 
-    const filteredDeposits = getFirstDoneDeposits(allDeposits, suffix);
+    const filteredDeposits = getFirstDoneDeposits(allDeposits, source);
     console.log("Filtered deposits:", filteredDeposits.length);
     const formattedDeposits = [];
     filteredDeposits.forEach((deposit) => {
