@@ -317,7 +317,7 @@ async function pushToDialer(
 
 //Get Deposits
 
-const getDeposits = async (date) => {
+const getDeposits = async (fromDate,toDate) => {
   await getToken()
     .then((accessToken) => {
       //console.log("Access Token:", accessToken);
@@ -327,7 +327,7 @@ const getDeposits = async (date) => {
       console.error("Error:", error.message);
     });
   const servertimenow = new Date().toISOString();
-  const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/payment/api/partner/76/deposits/deposit-view-model?query=&from=${date}&to=${servertimenow}&sort%5Bsorted%5D=true&sort%5Bunsorted%5D=true&sort%5Bempty%5D=true&pageSize=10&pageNumber=64&paged=true&unpaged=true&size=100`;
+  const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/payment/api/partner/76/deposits/deposit-view-model?query=&from=${fromDate}&to=${toDate}&sort%5Bsorted%5D=true&sort%5Bunsorted%5D=true&sort%5Bempty%5D=true&pageSize=10&pageNumber=64&paged=true&unpaged=true&size=100`;
   const headers = {
     accept: "*/*",
     Authorization: `Bearer ${authToken}`,
@@ -678,10 +678,10 @@ function getFirstDoneDeposits(deposits, source) {
 }
 
 app.get("/leads", verifyToken, async (req, res) => {
-  const { adminUuid, date } = req.body;
+  const { adminUuid, fromDate, toDate } = req.body;
   let source;
   console.log(req.body);
-  if (!adminUuid || isValidISOString(date) === false) {
+  if (!adminUuid || isValidISOString(fromDate) === false || isValidISOString(toDate) === false) {
     console.log("DATE OR ADMIN UUID IS INCORRECT");
     return res.status(400).send("BAD REQUEST:::::CHECK REQUEST BODY");
   }
@@ -724,7 +724,7 @@ app.get("/leads", verifyToken, async (req, res) => {
   const allDeposits = [];
 
   try {
-    const deposits = await getDeposits(date);
+    const deposits = await getDeposits(fromDate,toDate);
     allDeposits.push(...deposits);
 
     const filteredDeposits = getFirstDoneDeposits(allDeposits, source);
