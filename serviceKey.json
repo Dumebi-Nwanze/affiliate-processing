@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "affiliate-crm-408907",
+  "private_key_id": "26114744e59f116ee922e32627fd9fc540584ad0",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCUW6IBkZV2gcdg\nCK9yGlGUMMF0HHAPFYRi9IZGHJtoteIB55SNfc8cFqjYY61jvN22CF0WG48YmzJO\nB4I5xJO8G/9fKF9OCy0B+2IPuS76qN6qPAG57uMZ2BJL3Ryj+2P2BoQGAiZnQDxm\nbVCHPUNRmd8ZHEbbhG/8oq4PRLX0WXOrFtuwOVvLEtiyVpfcEflUAihtBzVt8yCE\ncSTnfoKngXP/QRsBpne5gRVtOTX5fH4srDy70Sera3oMC2KZseYjUjfQx/TY7uuB\nu2BXQjuSlm/bgXzTjZXqX7D7aKWXTyaAHkQkuAkHkUeFSOVec3x3GReU06NFdkSb\nJrIpt6ljAgMBAAECggEAGRfqrhM+0Z2f6Hlvm4AiHkuk3QvWVGbSTp6He6JpEuv4\nv1O5R7lo55pZkshBUqZmZdzCSfP9Xy8Y8iPI/hZm2qFtr123yQ6Q3U30xy4OaS1Z\nBDhEHnvug7eNWLGcn4vs23c8q3t/nWU7EiQZQ9az5UB+gNPMlGKxQm0Nvd1kXWDl\n45lYbfsNJWum19v9mHTR3gnnhLk997dggmrdLfUoe/IToll9Qqy4f9nhrL68BWyJ\nFQ3OzFTuStvg8rqCuM6v7o4JwZTyKM74vd3E3DOLOm0LDsNRieWGFHlpVy7Jg6xk\nbfkaovUa0GtEFTaOIu5E36h0wCYxlZLfkO79UyjUoQKBgQDP/3u43jTvFD8ENbxY\noz+762Xmh7zaqiAzvPOdUF5Q2NaPyEP0Mr3IBJ6Ir0PKdHth24rUL8vc07+ochIJ\nZNt/wVXPHyb+VTwg2PDo2kEhbOctWFPZDX0s0Avl8aswmjBwE9Tjx31vR3Zd42ZQ\nCnxetbPeNlykgnKYZ50b9t8aEQKBgQC2mJ351/bpXbwDhJjT5H6Vv1uUoMCO48Fe\nORsEz8SpaP5dJk/cdsgYqCa2QEUrf6I0XhbD7YICldk5/yOxZWUypWAxLxtYcJiu\nsifGH/6NRdlB0vXWRqDjjHiQP9jUqF28BsZlDQdKVxf30wPUu8+VVtqaU+9kSiDc\nT6dHrLX4MwKBgGNuLVXNm55inlFD4tq4h4Is4JSYdNZPF3/EJu0f+0ZIsiEfyiRV\nkVWpp6ONrSl+D3FTQwV2J81TyD4c8bRd63QiFwQhT0Gru0e0jU2y8AmrhsOtgr+y\n7BDdD6MHqR9dxiP9xvpwZe0pS1NMnp9Ks/OOhwKGGDloRqHGfltc44ARAoGAJP9R\naxE+P1S1xsS0LqLqny7xwHC983XkdVH+zn/GqkjS2U7s+Y+7xXs0tNLa8RBgblnu\nJO7X2+w+4oh20/fmhFeL4QtZcBcIaMVCV9uduURA3ByBoVQYP2Lz/s5hAd3HeFSr\nGEiGhKKXAajo6s7PJcQ+cOy24cw/UkR1cYlmKY8CgYADTj7aKOIx+ZXNdsbPhWen\nysoYXoPc/VV39YpOItUeMEAnYYInrbZcRi9AE4vyYYimcykh+tHPV8/kUYMMg8zn\n/NEf5l5zjEYh/6/S6ESFAu8LC6g6IYnzevMSLg0JC76qJeSFtTQhyjKNdWWTfhjM\niiPFJcz8G76jBqIDebVasA==\n-----END PRIVATE KEY-----\n",
+  "client_email": "affiliate-crm@affiliate-crm-408907.iam.gserviceaccount.com",
+  "client_id": "116783153666165047488",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/affiliate-crm%40affiliate-crm-408907.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
