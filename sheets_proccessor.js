@@ -335,7 +335,7 @@ const getDeposits = async (date) => {
 
   const response = await axios.get(apiUrl, { headers });
 
-  console.log(response.data.content);
+  //console.log(response.data.content);
   return response.data.content;
 };
 
@@ -693,10 +693,11 @@ app.get("/leads", verifyToken, async (req, res) => {
       console.log("INTERNAL SERVER ERROR:::CANT READ KEYS");
       return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ KEYS");
     }
+    console.log(keys);
 
-    Object.keys(keys).forEach((key) => {
-      if (keys[key] === adminUuid) {
-        console.log(keys[key]);
+    Object.keys(keys[0]).forEach((key) => {
+      if (keys[0][key] === adminUuid) {
+        console.log(key);
         source = key;
       }
     });
