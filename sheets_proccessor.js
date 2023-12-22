@@ -601,6 +601,29 @@ function isValidISOString(dateString) {
   const date = new Date(dateString);
   return date instanceof Date && !isNaN(date);
 }
+function isEarliestCreatedAtForAccount(deposit,allDeposits) {
+  // Find the lead with the earliest createdAt for the same accountUuid
+  const earliestCreatedAtDeposit = allDeposits.reduce(
+    (earliestDeposit, otherDeposit) => {
+      if (
+        otherDeposit.accountUuid === deposit.accountUuid &&
+        otherDeposit.status === "DONE" &&
+        (!earliestDeposit ||
+          new Date(otherDeposit.created) < new Date(earliestDeposit.created))
+      ) {
+        return otherDeposit;
+      }
+      return earliestDeposit;
+    },
+    null
+  );
+
+  // Check if the current lead has the earliest createdAt
+  return (
+    earliestCreatedAtDeposit &&
+    new Date(deposit.created) === new Date(earliestCreatedAtDeposit.created)
+  );
+}
 app.get("/leads", verifyToken, async (req, res) => {
   const { adminUuid, date } = req.body;
   console.log(req.body);
@@ -639,29 +662,7 @@ app.get("/leads", verifyToken, async (req, res) => {
     });
   const allLeads = [];
   const allDeposits = [];
-  function isEarliestCreatedAtForAccount(deposit) {
-    // Find the lead with the earliest createdAt for the same accountUuid
-    const earliestCreatedAtDeposit = allDeposits.reduce(
-      (earliestDeposit, otherDeposit) => {
-        if (
-          otherDeposit.accountUuid === deposit.accountUuid &&
-          otherDeposit.status === "DONE" &&
-          (!earliestDeposit ||
-            new Date(otherDeposit.created) < new Date(earliestDeposit.created))
-        ) {
-          return otherDeposit;
-        }
-        return earliestDeposit;
-      },
-      null
-    );
-
-    // Check if the current lead has the earliest createdAt
-    return (
-      earliestCreatedAtDeposit &&
-      new Date(deposit.created) === new Date(earliestCreatedAtDeposit.created)
-    );
-  }
+  
   try {
     // let page = 0;
 
@@ -694,11 +695,13 @@ app.get("/leads", verifyToken, async (req, res) => {
   
     const filteredDeposits = allDeposits.filter((deposit) => {
       const leadSuffix = deposit.accountLeadSource?.split("-")[1];
-      console.log("Lead suffix::::::::::::",leadSuffix);
-      console.log("Lead source::::::::::::",deposit.accountLeadSource);
-      console.log("Lead source split::::::::::::",deposit.accountLeadSource?.split("-"));
-      console.log("suffix::::::::::::",suffix);
-      return leadSuffix === suffix && isEarliestCreatedAtForAccount(deposit);
+      // console.log("Lead suffix::::::::::::",leadSuffix);
+      // console.log("Lead source::::::::::::",deposit.accountLeadSource);
+      // console.log("Lead source split::::::::::::",deposit.accountLeadSource?.split("-"));
+      // console.log("suffix::::::::::::",suffix);
+      const earliest = isEarliestCreatedAtForAccount(deposit, allDeposits);
+      console.log("Earliset::::::::::::",earliest);
+      return leadSuffix === suffix && earliest;
     });
     //console.log("Filtered leads:", filteredLeads.length);
     console.log("Filtered deposits:", filteredDeposits.length);
