@@ -624,6 +624,49 @@ function isEarliestCreatedAtForAccount(deposit,allDeposits) {
     new Date(deposit.created) === new Date(earliestCreatedAtDeposit.created)
   );
 }
+function getEarliestDoneDeposits(deposits, suffix) {
+  // Create an object to store deposits in buckets based on accountUuid
+  const depositBuckets = {};
+
+  // Sort deposits into buckets
+  deposits.forEach((deposit) => {
+    const accountUuid = deposit.accountUuid;
+
+    // If the bucket for this accountUuid doesn't exist, create it
+    if (!depositBuckets[accountUuid]) {
+      depositBuckets[accountUuid] = [];
+    }
+
+    // Add the deposit to the bucket
+    depositBuckets[accountUuid].push(deposit);
+  });
+
+  // Initialize an array to store the earliest "DONE" deposits with the specified suffix
+  const earliestDoneDeposits = [];
+
+  // Iterate through each bucket and select the "DONE" deposit with the earliest date and matching suffix
+  Object.keys(depositBuckets).forEach((accountUuid) => {
+    const depositsForAccount = depositBuckets[accountUuid];
+
+    // Filter deposits with status "DONE" and matching suffix
+    const doneDeposits = depositsForAccount.filter(
+      (deposit) => deposit.status === "DONE" && deposit.accountLeadSource.includes(suffix)
+    );
+
+    if (doneDeposits.length > 0) {
+      // Sort "DONE" deposits by date in ascending order
+      const sortedDoneDeposits = doneDeposits.sort(
+        (a, b) => new Date(a.created) - new Date(b.created)
+      );
+
+      // Add the earliest "DONE" deposit to the result array
+      earliestDoneDeposits.push(sortedDoneDeposits[0]);
+    }
+  });
+
+  return earliestDoneDeposits;
+}
+
 app.get("/leads", verifyToken, async (req, res) => {
   const { adminUuid, date } = req.body;
   console.log(req.body);
@@ -693,16 +736,17 @@ app.get("/leads", verifyToken, async (req, res) => {
       const deposits = await getDeposits(date);
       allDeposits.push(...deposits);
   
-    const filteredDeposits = allDeposits.filter((deposit) => {
-      const leadSuffix = deposit.accountLeadSource?.split("-")[1];
-      // console.log("Lead suffix::::::::::::",leadSuffix);
-      // console.log("Lead source::::::::::::",deposit.accountLeadSource);
-      // console.log("Lead source split::::::::::::",deposit.accountLeadSource?.split("-"));
-      // console.log("suffix::::::::::::",suffix);
-      const earliest = isEarliestCreatedAtForAccount(deposit, allDeposits);
-      console.log("Earliset::::::::::::",earliest);
-      return leadSuffix === suffix && earliest;
-    });
+    // const filteredDeposits = allDeposits.filter((deposit) => {
+    //   const leadSuffix = deposit.accountLeadSource?.split("-")[1];
+    //   // console.log("Lead suffix::::::::::::",leadSuffix);
+    //   // console.log("Lead source::::::::::::",deposit.accountLeadSource);
+    //   // console.log("Lead source split::::::::::::",deposit.accountLeadSource?.split("-"));
+    //   // console.log("suffix::::::::::::",suffix);
+    //   const earliest = isEarliestCreatedAtForAccount(deposit, allDeposits);
+    //   console.log("Earliset::::::::::::",earliest);
+    //   return leadSuffix === suffix && earliest;
+    // });
+    const filteredDeposits = getEarliestDoneDeposits(allDeposits, suffix)
     //console.log("Filtered leads:", filteredLeads.length);
     console.log("Filtered deposits:", filteredDeposits.length);
     const formattedDeposits = [];
