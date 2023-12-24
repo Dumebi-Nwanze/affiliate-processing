@@ -605,6 +605,13 @@ app.post("/create-lead", verifyToken, async (req, res) => {
                 status: "SUCCESS",
                 message: "Store this admin uuid in a safe place",
                 adminUuid: adminUuid,
+                data: {
+                  account_uuid: response.data.uuid,
+                  created: response.data.created,
+                  email: response.data.email,
+                  name: response.data.name,
+                  surname: response.data.surname,
+                },
               });
             } else {
               console.log("An error occurred while creating an account");
@@ -826,7 +833,10 @@ app.get("/accounts", verifyToken, async (req, res) => {
           return account.data;
         }
       } catch (error) {
-        console.error(`Error getting account: email : ${email}:`, error.message);
+        console.error(
+          `Error getting account: email : ${email}:`,
+          error.message
+        );
       } finally {
         emailsProcessed++;
 
@@ -843,7 +853,7 @@ app.get("/accounts", verifyToken, async (req, res) => {
     });
 
     const allAccounts = await Promise.all(accountPromises);
-console.log(allAccounts);
+    console.log(allAccounts);
     const filteredAccounts = allAccounts.filter(
       (acc) => acc?.leadInfo?.leadSource?.includes(source) ?? false
     );
@@ -854,7 +864,6 @@ console.log(allAccounts);
     return res.status(500).send("INTERNAL SERVER ERROR::::CANT GET ACCOUNTS");
   }
 });
-
 
 // app.get("/", (req,res)=>{
 //   return res.json({message:"hello"})
