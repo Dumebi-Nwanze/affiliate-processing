@@ -8,6 +8,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const fs = require("fs");
 require("dotenv").config();
+const bodyParser = require("body-parser");
 
 // const middlewares = require("./middlewares");
 // const api = require("./api");
@@ -19,6 +20,7 @@ app.use(morgan("dev"));
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 const validateToken = (req, res, next) => {
   const authToken = req.headers.authorization;
@@ -123,6 +125,26 @@ async function getLeadsFromMatchTrade(page) {
     throw error;
   }
 }
+
+const getClientAccounts = async (email) => {
+  const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/account/api/partners/76/accounts/by-email?email=${email}`;
+  const headers = {
+    accept: "*/*",
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${authToken}`,
+  };
+
+  try {
+    const response = await axios.get(apiUrl, { headers });
+    return {
+      status: "SUCCESS",
+      data: response.data,
+    };
+  } catch (error) {
+    console.log("Error: ", error.response.data);
+    return error.response.data;
+  }
+};
 
 /**    Push to MatchTrade Code End */
 
@@ -317,7 +339,7 @@ async function pushToDialer(
 
 //Get Deposits
 
-const getDeposits = async (fromDate,toDate) => {
+const getDeposits = async (fromDate, toDate) => {
   await getToken()
     .then((accessToken) => {
       //console.log("Access Token:", accessToken);
@@ -677,11 +699,15 @@ function getFirstDoneDeposits(deposits, source) {
   return earliestDoneDeposits;
 }
 
-app.get("/leads", verifyToken, async (req, res) => {
+app.get("/ftd-clients", verifyToken, async (req, res) => {
   const { adminUuid, fromDate, toDate } = req.body;
   let source;
   console.log(req.body);
-  if (!adminUuid || isValidISOString(fromDate) === false || isValidISOString(toDate) === false) {
+  if (
+    !adminUuid ||
+    isValidISOString(fromDate) === false ||
+    isValidISOString(toDate) === false
+  ) {
     console.log("DATE OR ADMIN UUID IS INCORRECT");
     return res.status(400).send("BAD REQUEST:::::CHECK REQUEST BODY");
   }
@@ -702,8 +728,6 @@ app.get("/leads", verifyToken, async (req, res) => {
       }
     });
 
-    
-    
     if (!source) {
       console.log("ADMIN UUID IS NOT FOUND IN STORE");
       return res.status(400).send("ADMIN UUID IS NOT FOUND IN STORE");
@@ -724,7 +748,7 @@ app.get("/leads", verifyToken, async (req, res) => {
   const allDeposits = [];
 
   try {
-    const deposits = await getDeposits(fromDate,toDate);
+    const deposits = await getDeposits(fromDate, toDate);
     allDeposits.push(...deposits);
 
     const filteredDeposits = getFirstDoneDeposits(allDeposits, source);
@@ -734,11 +758,10 @@ app.get("/leads", verifyToken, async (req, res) => {
       formattedDeposits.push({
         uuid: deposit.uuid,
         accountUuid: deposit.accountUuid,
-        "ftd_date": deposit.created,
+        ftd_date: deposit.created,
         amount: deposit.amount,
         status: deposit.status,
         email: deposit.email,
-        
       });
     });
 
@@ -750,6 +773,88 @@ app.get("/leads", verifyToken, async (req, res) => {
       .send({ error: "INTERNAL_SERVER_ERROR", message: e.message });
   }
 });
+
+app.get("/accounts", verifyToken, async (req, res) => {
+  const { adminUuid, emails } = req.body;
+  let source;
+  console.log(req.body);
+  if (!adminUuid || !Array.isArray(emails)) {
+    console.log("ADMIN UUID OR EMAILS NOT ADDED");
+    return res.status(400).send("BAD REQUEST:::::CHECK REQUEST BODY");
+  }
+  let suffix;
+  try {
+    var keys = JSON.parse(fs.readFileSync("./keys.json"));
+
+    if (!keys) {
+      console.log("INTERNAL SERVER ERROR:::CANT READ KEYS");
+      return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ KEYS");
+    }
+    console.log(keys);
+
+    Object.keys(keys[0]).forEach((key) => {
+      if (keys[0][key] === adminUuid) {
+        console.log(key);
+        source = key;
+      }
+    });
+
+    if (!source) {
+      console.log("ADMIN UUID IS NOT FOUND IN STORE");
+      return res.status(400).send("ADMIN UUID IS NOT FOUND IN STORE");
+    }
+  } catch (error) {
+    console.error("Error reading or parsing suffices:", error);
+    return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
+  }
+
+  let emailsProcessed = 0;
+
+  try {
+    await getToken()
+      .then((accessToken) => {
+        authToken = accessToken;
+      })
+      .catch((error) => {
+        console.error("Error:", error.message);
+      });
+
+    const accountPromises = emails.map(async (email) => {
+      try {
+        const account = await getClientAccounts(email);
+        if (account.status === "SUCCESS") {
+          return account.data;
+        }
+      } catch (error) {
+        console.error(`Error getting account: email : ${email}:`, error.message);
+      } finally {
+        emailsProcessed++;
+
+        if (emailsProcessed % 20 === 0) {
+          await getToken()
+            .then((accessToken) => {
+              authToken = accessToken;
+            })
+            .catch((error) => {
+              console.error("Error refreshing token:", error.message);
+            });
+        }
+      }
+    });
+
+    const allAccounts = await Promise.all(accountPromises);
+console.log(allAccounts);
+    const filteredAccounts = allAccounts.filter(
+      (acc) => acc?.leadInfo?.leadSource?.includes(source) ?? false
+    );
+
+    return res.status(200).send({ data: filteredAccounts, message: "SUCCESS" });
+  } catch (error) {
+    console.log("INTERNAL SERVER ERROR::::CANT GET ACCOUNTS");
+    return res.status(500).send("INTERNAL SERVER ERROR::::CANT GET ACCOUNTS");
+  }
+});
+
 
 // app.get("/", (req,res)=>{
 //   return res.json({message:"hello"})
