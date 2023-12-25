@@ -126,6 +126,29 @@ async function getLeadsFromMatchTrade(page) {
   }
 }
 
+const getAllAccounts = async (source, fromDate, toDate) => {
+  await getToken()
+    .then((accessToken) => {
+      console.log("Access Token:", accessToken);
+      authToken = accessToken;
+    })
+    .catch((error) => {
+      console.error("Error:", error.message);
+    });
+  const servertimenow = new Date().toISOString();
+  const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/account/api/partner/76/leads/view?from=${fromDate??'2023-12-20T08%3A12%3A57.533Z'}&to=${toDate??servertimenow}&size=1000&page=0&query=`;
+  const headers = {
+    accept: "*/*",
+    Authorization: `Bearer ${authToken}`,
+  };
+
+  const response = await axios.get(apiUrl, { headers });
+console.log(response.data.length);
+  //console.log(response.data);
+  const fileteredAccounts = response.data.content.filter((res)=>res?.leadInfo?.leadSource?.includes(source)??false)
+  return fileteredAccounts
+};
+
 const getClientAccounts = async (email) => {
   const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/account/api/partners/76/accounts/by-email?email=${email}`;
   const headers = {
@@ -781,7 +804,7 @@ app.get("/ftd-clients", verifyToken, async (req, res) => {
   }
 });
 
-app.get("/accounts", verifyToken, async (req, res) => {
+app.get("/accounts-by-emails", verifyToken, async (req, res) => {
   const { adminUuid, emails } = req.body;
   let source;
   console.log(req.body);
@@ -857,6 +880,58 @@ app.get("/accounts", verifyToken, async (req, res) => {
     const filteredAccounts = allAccounts.filter(
       (acc) => acc?.leadInfo?.leadSource?.includes(source) ?? false
     );
+
+    return res.status(200).send({ data: filteredAccounts, message: "SUCCESS" });
+  } catch (error) {
+    console.log("INTERNAL SERVER ERROR::::CANT GET ACCOUNTS");
+    return res.status(500).send("INTERNAL SERVER ERROR::::CANT GET ACCOUNTS");
+  }
+});
+
+app.get("/accounts", verifyToken, async (req, res) => {
+  const { adminUuid, fromDate, toDate } = req.body;
+  let source;
+  console.log(req.body);
+  
+  if (!adminUuid) {
+    console.log("ADMIN UUID NOT ADDED");
+    return res.status(400).send("BAD REQUEST:::::CHECK REQUEST BODY");
+  }
+  if((fromDate&&!isValidISOString(fromDate))||(toDate&&!isValidISOString(toDate))){
+    console.log("WRONG DATE FRORMAT");
+    return res.status(400).send("BAD REQUEST:::::DATE FORMAT MUST BE ISO STRING");
+  }
+  let suffix;
+  try {
+    var keys = JSON.parse(fs.readFileSync("./keys.json"));
+
+    if (!keys) {
+      console.log("INTERNAL SERVER ERROR:::CANT READ KEYS");
+      return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ KEYS");
+    }
+    console.log(keys);
+
+    Object.keys(keys[0]).forEach((key) => {
+      if (keys[0][key] === adminUuid) {
+        console.log(key);
+        source = key;
+      }
+    });
+
+    if (!source) {
+      console.log("ADMIN UUID IS NOT FOUND IN STORE");
+      return res.status(400).send("ADMIN UUID IS NOT FOUND IN STORE");
+    }
+  } catch (error) {
+    console.error("Error reading or parsing suffices:", error);
+    return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
+  }
+
+
+
+  try {
+    const filteredAccounts = await getAllAccounts(source, fromDate, toDate)
+    console.log(filteredAccounts.length);
 
     return res.status(200).send({ data: filteredAccounts, message: "SUCCESS" });
   } catch (error) {
