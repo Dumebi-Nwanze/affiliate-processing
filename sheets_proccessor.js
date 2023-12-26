@@ -901,6 +901,10 @@ app.get("/accounts", verifyToken, async (req, res) => {
     console.log("WRONG DATE FRORMAT");
     return res.status(400).send("BAD REQUEST:::::DATE FORMAT MUST BE ISO STRING");
   }
+  if(new Date(fromDate)< new Date("2023-12-21T00:00:00.000Z")){
+    console.log("OUT OF RANGE");
+    return res.status(400).send("BAD REQUEST:::::DATE IS OUT OF RANGE");
+  }
   let suffix;
   try {
     var keys = JSON.parse(fs.readFileSync("./keys.json"));
