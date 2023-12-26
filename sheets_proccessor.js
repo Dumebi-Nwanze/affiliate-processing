@@ -797,7 +797,7 @@ app.get("/ftd-clients", verifyToken, async (req, res) => {
           accountUuid: deposit.accountUuid,
           ftd_date: deposit.created,
           amount: deposit.amount,
-          status: response.data.leadStatus,
+          status: response.data.leadStatus.name,
           email: deposit.email,
         });
         return {
