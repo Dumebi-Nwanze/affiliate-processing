@@ -639,7 +639,12 @@ app.post("/create-lead", verifyToken, async (req, res) => {
             } else {
               console.log("An error occurred while creating an account");
               console.log("Error:", response);
-              res
+              if(response.data.status==="CONFLICT"){
+              return  res
+                .status(200)
+                .send({"statusCode":200,"status":"FAILURE","message":"Duplicate error",});
+              }
+             return res
                 .status(500)
                 .send({ error: "INTERNAL_SERVER_ERROR", message: response });
             }
