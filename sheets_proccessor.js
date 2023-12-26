@@ -136,7 +136,7 @@ const getAllAccounts = async (source, fromDate, toDate) => {
       console.error("Error:", error.message);
     });
   const servertimenow = new Date().toISOString();
-  const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/account/api/partner/76/leads/view?from=${new Date(fromDate)<new Date('2023-12-20T08:12:57.533Z')?'2023-12-20T08%3A12%3A57.533Z':fromDate}&to=${toDate??servertimenow}&size=2000&page=0&query=`;
+  const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/account/api/partner/76/leads/view?from=${fromDate??'2023-12-20T08%3A12%3A57.533Z'}&to=${toDate??servertimenow}&size=2000&page=0&query=`;
   const headers = {
     accept: "*/*",
     Authorization: `Bearer ${authToken}`,
@@ -144,7 +144,8 @@ const getAllAccounts = async (source, fromDate, toDate) => {
 
   const response = await axios.get(apiUrl, { headers });
 console.log(response.data.length);
-  //console.log(response.data);
+console.log(response.data.numberOfElements);
+  console.log(response.data.totalPages);
   const fileteredAccounts = response.data.content.filter((res)=>res?.leadInfo?.leadSource?.includes(source)??false)
   return fileteredAccounts
 };
@@ -372,7 +373,7 @@ const getDeposits = async (fromDate, toDate) => {
       console.error("Error:", error.message);
     });
   const servertimenow = new Date().toISOString();
-  const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/payment/api/partner/76/deposits/deposit-view-model?query=&from=${fromDate}&to=${toDate}&sort%5Bsorted%5D=true&sort%5Bunsorted%5D=true&sort%5Bempty%5D=true&pageSize=10&pageNumber=64&paged=true&unpaged=true&size=100`;
+  const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/payment/api/partner/76/deposits/deposit-view-model?query=&from=${new Date(fromDate)<new Date('2023-12-20T08:12:57.533Z')?'2023-12-20T08%3A12%3A57.533Z':fromDate}&to=${toDate}&sort%5Bsorted%5D=true&sort%5Bunsorted%5D=true&sort%5Bempty%5D=true&pageSize=10&pageNumber=64&paged=true&unpaged=true&size=100`;
   const headers = {
     accept: "*/*",
     Authorization: `Bearer ${authToken}`,
