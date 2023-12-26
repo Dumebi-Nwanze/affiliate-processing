@@ -136,7 +136,7 @@ const getAllAccounts = async (source, fromDate, toDate) => {
       console.error("Error:", error.message);
     });
   const servertimenow = new Date().toISOString();
-  const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/account/api/partner/76/leads/view?from=${fromDate??'2023-12-20T08%3A12%3A57.533Z'}&to=${toDate??servertimenow}&size=1000&page=0&query=`;
+  const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/account/api/partner/76/leads/view?from=${new Date(fromDate)<new Date('2023-12-20T08:12:57.533Z')?'2023-12-20T08%3A12%3A57.533Z':fromDate}&to=${toDate??servertimenow}&size=2000&page=0&query=`;
   const headers = {
     accept: "*/*",
     Authorization: `Bearer ${authToken}`,
