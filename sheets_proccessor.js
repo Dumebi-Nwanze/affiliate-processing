@@ -128,26 +128,39 @@ async function getLeadsFromMatchTrade(page) {
 
 const getAllAccounts = async (source, fromDate, toDate) => {
   await getToken()
-    .then((accessToken) => {
-      console.log("Access Token:", accessToken);
-      authToken = accessToken;
-    })
-    .catch((error) => {
-      console.error("Error:", error.message);
-    });
+  .then((accessToken) => {
+    console.log("Access Token:", accessToken);
+    authToken = accessToken;
+  })
+  .catch((error) => {
+    console.error("Error:", error.message);
+  });
+
+const accounts = [];
+let currentPage = 0;
+let totalPages = 1;
+
+do {
   const servertimenow = new Date().toISOString();
-  const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/account/api/partner/76/leads/view?from=${new Date(fromDate)<new Date('2023-12-20T08:12:57.533Z')?'2023-12-20T08%3A12%3A57.533Z':fromDate}&to=${toDate??servertimenow}&size=2000&page=0&query=`;
+  const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/account/api/partner/76/leads/view?from=${fromDate??'2023-12-21T00%3A00%3A00Z'}&to=${toDate??servertimenow}&size=2000&page=${currentPage}&query`;
   const headers = {
     accept: "*/*",
     Authorization: `Bearer ${authToken}`,
   };
 
   const response = await axios.get(apiUrl, { headers });
-console.log(response.data.length);
-console.log(response.data.numberOfElements);
-  console.log(response.data.totalPages);
-  const fileteredAccounts = response.data.content.filter((res)=>res?.leadInfo?.leadSource?.includes(source)??false)
-  return fileteredAccounts
+  totalPages = response.data.totalPages;
+  const currentPageAccounts = response.data.content;
+
+  accounts.push(...currentPageAccounts);
+  currentPage++;
+
+} while (currentPage < totalPages);
+
+console.log("Total accounts:", accounts.length);
+const fileteredAccounts = accounts.filter((res)=>res?.leadInfo?.leadSource?.includes(source)??false)
+console.log("Total filtered accounts:", fileteredAccounts.length);
+return fileteredAccounts
 };
 
 const getClientAccounts = async (email) => {
@@ -365,24 +378,39 @@ async function pushToDialer(
 
 const getDeposits = async (fromDate, toDate) => {
   await getToken()
-    .then((accessToken) => {
-      //console.log("Access Token:", accessToken);
-      authToken = accessToken;
-    })
-    .catch((error) => {
-      console.error("Error:", error.message);
-    });
+  .then((accessToken) => {
+    //console.log("Access Token:", accessToken);
+    authToken = accessToken;
+  })
+  .catch((error) => {
+    console.error("Error:", error.message);
+  });
+
+const deposits = [];
+let currentPage = 0;
+let totalPages=1
+
+do {
   const servertimenow = new Date().toISOString();
-  const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/payment/api/partner/76/deposits/deposit-view-model?query=&from=${new Date(fromDate)<new Date('2023-12-20T08:12:57.533Z')?'2023-12-20T08%3A12%3A57.533Z':fromDate}&to=${toDate}&sort%5Bsorted%5D=true&sort%5Bunsorted%5D=true&sort%5Bempty%5D=true&pageSize=10&pageNumber=64&paged=true&unpaged=true&size=1000`;
+  const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/payment/api/partner/76/deposits/deposit-view-model?from=${fromDate??'2023-12-21T00%3A00%3A00Z'}&to=${toDate??servertimenow}&size=2000&page=${currentPage}&query`;
+
   const headers = {
     accept: "*/*",
     Authorization: `Bearer ${authToken}`,
   };
 
   const response = await axios.get(apiUrl, { headers });
+  totalPages = response.data.totalPages;
+ // console.log(totalPages);
+  const currentPageDeposits = response.data.content;
 
-  //console.log(response.data.content);
-  return response.data.content;
+  deposits.push(...currentPageDeposits);
+  currentPage++;
+
+} while (currentPage < totalPages);
+
+console.log("Total deposits:", deposits.length);
+return deposits;
 };
 
 /**    Push to Dialer Code End */
