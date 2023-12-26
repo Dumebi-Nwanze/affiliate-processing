@@ -789,17 +789,27 @@ app.get("/ftd-clients", verifyToken, async (req, res) => {
 
     const filteredDeposits = getFirstDoneDeposits(allDeposits, source);
     console.log("Filtered deposits:", filteredDeposits.length);
-    const formattedDeposits = [];
-    filteredDeposits.forEach((deposit) => {
-      formattedDeposits.push({
-        uuid: deposit.uuid,
-        accountUuid: deposit.accountUuid,
-        ftd_date: deposit.created,
-        amount: deposit.amount,
-        status: deposit.status,
-        email: deposit.email,
-      });
-    });
+    const formattedDeposits =    await Promise.all(
+      filteredDeposits.map(async (deposit) => {
+        const response = await getClientAccounts(deposit.email);
+        console.log({
+          uuid: deposit.uuid,
+          accountUuid: deposit.accountUuid,
+          ftd_date: deposit.created,
+          amount: deposit.amount,
+          status: response.data.leadStatus,
+          email: deposit.email,
+        });
+        return {
+          uuid: deposit.uuid,
+          accountUuid: deposit.accountUuid,
+          ftd_date: deposit.created,
+          amount: deposit.amount,
+          status: response.data.leadStatus,
+          email: deposit.email,
+        };
+      })
+    );
 
     res.status(200).send({ data: formattedDeposits, message: "SUCCESS" });
   } catch (e) {
