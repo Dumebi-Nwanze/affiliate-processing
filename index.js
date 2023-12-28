@@ -39,21 +39,21 @@ async function partialUpdate(uid, status) {
     "Invalid Phone": "NO_POTENTIAL",
     "Failed To Connect": "NO_POTENTIAL",
     Duplicate: "NO_POTENTIAL",
-    "Do not call": "NO_POTENTIAL",
+    "Do Not Call": "NO_POTENTIAL",
     Underaged: "NO_POTENTIAL",
     "Hang up": "NEED_ANALYSIS",
     Declined: "NEED_ANALYSIS",
-    "Language barrier": "NEED_ANALYSIS",
+    "Language Barrier": "NEED_ANALYSIS",
     "Wrong person": "NEED_ANALYSIS",
-    "Not interested": "NEED_ANALYSIS",
+    "Not Interested": "NEED_ANALYSIS",
     Deposit: "READY_TO_DEPOSIT",
     VoiceMail: "CONTACTED",
     "Personal Meeting": "CONTACTED",
     "General Meeting": "CONTACTED",
     Busy: "CONTACTED",
-    "No answer": "CONTACTED",
+    "No Answer": "CONTACTED",
     "Default Status": "NEW_CONTACT",
-    "New contact": "NEW_CONTACT",
+    "New Contact": "NEW_CONTACT",
   };
 
   const statusIdMap = {
@@ -80,6 +80,9 @@ async function partialUpdate(uid, status) {
       console.error("Error:", error.message);
     });
   //console.log(authToken);
+  console.log("Status is:::::::::: ",status);
+  console.log("Status Mappings is:::::::::: ",statusMappings[status]);
+  console.log("Status id map is:::::::::: ",statusIdMap[status]);
   const servertimenow = new Date().toISOString();
   try {
     const response = await axios.patch(
@@ -262,11 +265,11 @@ const updateSelectAccounts = async () => {
         if (campaLead) {
           await partialUpdate(
             mtAccount.uuid,
-            statusMap[campaLead.campaign_id] ?? "Default Status"
+            statusMap[campaLead.status_id] ?? "Default Status"
           );
           console.log(
             `Updated account ${mtAccount.email} with status ${
-              statusMap[campaLead.campaign_id]
+              statusMap[campaLead.status_id]
             }`
           );
           totalAccUpdated++;
@@ -286,7 +289,7 @@ const updateSelectAccounts = async () => {
   }
 };
 
-setInterval(updateSelectAccounts, 3600000);
+setInterval(updateSelectAccounts, 7200000);
 
 
 app.listen(port, () => {
