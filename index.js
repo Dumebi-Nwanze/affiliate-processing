@@ -289,7 +289,9 @@ const updateSelectAccounts = async () => {
   }
 };
 updateSelectAccounts()
-setInterval(updateSelectAccounts(), 7200000);
+setInterval(()=>{
+  updateSelectAccounts()
+}, 7200000);
 
 
 app.listen(port, () => {
