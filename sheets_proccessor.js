@@ -128,39 +128,59 @@ async function getLeadsFromMatchTrade(page) {
 
 const getAllAccounts = async (source, fromDate, toDate) => {
   await getToken()
-  .then((accessToken) => {
-    console.log("Access Token:", accessToken);
-    authToken = accessToken;
-  })
-  .catch((error) => {
-    console.error("Error:", error.message);
-  });
+    .then((accessToken) => {
+      console.log("Access Token:", accessToken);
+      authToken = accessToken;
+    })
+    .catch((error) => {
+      console.error("Error:", error.message);
+    });
 
-const accounts = [];
-let currentPage = 0;
-let totalPages = 1;
+  const accounts = [];
+  let currentPage = 0;
+  let totalPages = 1;
 
-do {
-  const servertimenow = new Date().toISOString();
-  const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/account/api/partner/76/leads/view?from=${fromDate??'2023-12-21T00%3A00%3A00Z'}&to=${toDate??servertimenow}&size=2000&page=${currentPage}&query`;
-  const headers = {
-    accept: "*/*",
-    Authorization: `Bearer ${authToken}`,
-  };
+  do {
+    const servertimenow = new Date().toISOString();
+    const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/account/api/partner/76/leads/view?from=${
+      fromDate ?? "2023-12-21T00%3A00%3A00Z"
+    }&to=${toDate ?? servertimenow}&size=2000&page=${currentPage}&query`;
+    const headers = {
+      accept: "*/*",
+      Authorization: `Bearer ${authToken}`,
+    };
 
-  const response = await axios.get(apiUrl, { headers });
-  totalPages = response.data.totalPages;
-  const currentPageAccounts = response.data.content;
+    const response = await axios.get(apiUrl, { headers });
+    totalPages = response.data.totalPages;
+    const currentPageAccounts = response.data.content;
+    for (let i = 0; i < currentPageAccounts.length; i++) {
+      accounts.push({
+        uuid: currentPageAccounts[i].uuid,
+        created: currentPageAccounts[i].created,
+        updated: currentPageAccounts[i].updated,
+        leadInfo: {
+          leadSource:currentPageAccounts[i].leadInfo? currentPageAccounts[i].leadInfo.leadSource:null,
+        },
+        email: currentPageAccounts[i].email,
+        branchUuid: currentPageAccounts[i].branchUuid,
+        name: currentPageAccounts[i].name,
+        surname: currentPageAccounts[i].surname,
+        phone: currentPageAccounts[i].phone,
+        country: currentPageAccounts[i].country,
+        role: currentPageAccounts[i].role,
+        leadStatus: currentPageAccounts[i].leadStatus,
+        leadSource: currentPageAccounts[i].leadSource,
+      });
+    }
+    currentPage++;
+  } while (currentPage < totalPages);
 
-  accounts.push(...currentPageAccounts);
-  currentPage++;
-
-} while (currentPage < totalPages);
-
-console.log("Total accounts:", accounts.length);
-const fileteredAccounts = accounts.filter((res)=>res?.leadInfo?.leadSource?.includes(source)??false)
-console.log("Total filtered accounts:", fileteredAccounts.length);
-return fileteredAccounts
+  console.log("Total accounts:", accounts.length);
+  const fileteredAccounts = accounts.filter(
+    (res) => res?.leadInfo?.leadSource?.includes(source) ?? false
+  );
+  console.log("Total filtered accounts:", fileteredAccounts.length);
+  return fileteredAccounts;
 };
 
 const getClientAccounts = async (email) => {
@@ -194,7 +214,8 @@ async function pushToDialer(
   source,
   purchasesite,
   supportsite,
-  country, campaignid
+  country,
+  campaignid
 ) {
   console.log("Pushing to dialer");
   let date_ob = new Date();
@@ -378,39 +399,40 @@ async function pushToDialer(
 
 const getDeposits = async (fromDate, toDate) => {
   await getToken()
-  .then((accessToken) => {
-    //console.log("Access Token:", accessToken);
-    authToken = accessToken;
-  })
-  .catch((error) => {
-    console.error("Error:", error.message);
-  });
+    .then((accessToken) => {
+      //console.log("Access Token:", accessToken);
+      authToken = accessToken;
+    })
+    .catch((error) => {
+      console.error("Error:", error.message);
+    });
 
-const deposits = [];
-let currentPage = 0;
-let totalPages=1
+  const deposits = [];
+  let currentPage = 0;
+  let totalPages = 1;
 
-do {
-  const servertimenow = new Date().toISOString();
-  const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/payment/api/partner/76/deposits/deposit-view-model?from=${fromDate??'2023-12-21T00%3A00%3A00Z'}&to=${toDate??servertimenow}&size=2000&page=${currentPage}&query`;
+  do {
+    const servertimenow = new Date().toISOString();
+    const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/payment/api/partner/76/deposits/deposit-view-model?from=${
+      fromDate ?? "2023-12-21T00%3A00%3A00Z"
+    }&to=${toDate ?? servertimenow}&size=2000&page=${currentPage}&query`;
 
-  const headers = {
-    accept: "*/*",
-    Authorization: `Bearer ${authToken}`,
-  };
+    const headers = {
+      accept: "*/*",
+      Authorization: `Bearer ${authToken}`,
+    };
 
-  const response = await axios.get(apiUrl, { headers });
-  totalPages = response.data.totalPages;
- // console.log(totalPages);
-  const currentPageDeposits = response.data.content;
+    const response = await axios.get(apiUrl, { headers });
+    totalPages = response.data.totalPages;
+    // console.log(totalPages);
+    const currentPageDeposits = response.data.content;
 
-  deposits.push(...currentPageDeposits);
-  currentPage++;
+    deposits.push(...currentPageDeposits);
+    currentPage++;
+  } while (currentPage < totalPages);
 
-} while (currentPage < totalPages);
-
-console.log("Total deposits:", deposits.length);
-return deposits;
+  console.log("Total deposits:", deposits.length);
+  return deposits;
 };
 
 /**    Push to Dialer Code End */
@@ -617,7 +639,8 @@ app.post("/create-lead", verifyToken, async (req, res) => {
         source,
         purchasesite,
         supportsite,
-        country,1
+        country,
+        1
       ).then(async (response) => {
         console.log("Did Dialer succeed: ", response);
 
@@ -668,12 +691,16 @@ app.post("/create-lead", verifyToken, async (req, res) => {
             } else {
               console.log("An error occurred while creating an account");
               console.log("Error:", response);
-              if(response.data.status==="CONFLICT"){
-              return  res
-                .status(200)
-                .send({"statusCode":200,"status":"FAILURE","message":"Duplicate error",});
+              if (response.data.status === "CONFLICT") {
+                return res
+                  .status(200)
+                  .send({
+                    statusCode: 200,
+                    status: "FAILURE",
+                    message: "Duplicate error",
+                  });
               }
-             return res
+              return res
                 .status(500)
                 .send({ error: "INTERNAL_SERVER_ERROR", message: response });
             }
@@ -817,7 +844,7 @@ app.get("/ftd-clients", verifyToken, async (req, res) => {
 
     const filteredDeposits = getFirstDoneDeposits(allDeposits, source);
     console.log("Filtered deposits:", filteredDeposits.length);
-    const formattedDeposits =    await Promise.all(
+    const formattedDeposits = await Promise.all(
       filteredDeposits.map(async (deposit) => {
         const response = await getClientAccounts(deposit.email);
         console.log({
@@ -936,14 +963,19 @@ app.get("/accounts", verifyToken, async (req, res) => {
   const { adminUuid, fromDate, toDate } = req.body;
   let source;
   console.log(req.body);
-  
+
   if (!adminUuid) {
     console.log("ADMIN UUID NOT ADDED");
     return res.status(400).send("BAD REQUEST:::::CHECK REQUEST BODY");
   }
-  if((fromDate&&!isValidISOString(fromDate))||(toDate&&!isValidISOString(toDate))){
+  if (
+    (fromDate && !isValidISOString(fromDate)) ||
+    (toDate && !isValidISOString(toDate))
+  ) {
     console.log("WRONG DATE FRORMAT");
-    return res.status(400).send("BAD REQUEST:::::DATE FORMAT MUST BE ISO STRING");
+    return res
+      .status(400)
+      .send("BAD REQUEST:::::DATE FORMAT MUST BE ISO STRING");
   }
   // if(new Date(fromDate)< new Date("2023-12-21T00:00:00.000Z")){
   //   console.log("OUT OF RANGE");
@@ -975,10 +1007,8 @@ app.get("/accounts", verifyToken, async (req, res) => {
     return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
   }
 
-
-
   try {
-    const filteredAccounts = await getAllAccounts(source, fromDate, toDate)
+    const filteredAccounts = await getAllAccounts(source, fromDate, toDate);
     console.log(filteredAccounts.length);
 
     return res.status(200).send({ data: filteredAccounts, message: "SUCCESS" });
