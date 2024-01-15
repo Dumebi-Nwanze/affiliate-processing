@@ -640,7 +640,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
         purchasesite,
         supportsite,
         country,
-        1
+        13,
       ).then(async (response) => {
         console.log("Did Dialer succeed: ", response);
 
@@ -866,7 +866,7 @@ app.get("/ftd-clients", verifyToken, async (req, res) => {
       })
     );
 
-    res.status(200).send({ data: formattedDeposits, message: "SUCCESS" });
+    res.status(200).send({amount:formattedDeposits.length, data: formattedDeposits, message: "SUCCESS" });
   } catch (e) {
     console.error("Error: ", e);
     res
@@ -1011,7 +1011,7 @@ app.get("/accounts", verifyToken, async (req, res) => {
     const filteredAccounts = await getAllAccounts(source, fromDate, toDate);
     console.log(filteredAccounts.length);
 
-    return res.status(200).send({ data: filteredAccounts, message: "SUCCESS" });
+    return res.status(200).send({amount:filteredAccounts.length, data: filteredAccounts, message: "SUCCESS",});
   } catch (error) {
     console.log("INTERNAL SERVER ERROR::::CANT GET ACCOUNTS");
     return res.status(500).send("INTERNAL SERVER ERROR::::CANT GET ACCOUNTS");
