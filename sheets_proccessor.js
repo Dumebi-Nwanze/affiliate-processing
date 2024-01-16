@@ -159,7 +159,7 @@ const getAllAccounts = async (source, fromDate, toDate) => {
         created: currentPageAccounts[i].created,
         updated: currentPageAccounts[i].updated,
         leadInfo: {
-          leadSource:currentPageAccounts[i].leadInfo? currentPageAccounts[i].leadInfo.leadSource:currentPageAccounts[i].leadSource,
+          leadSource:currentPageAccounts[i].leadSource,
         },
         email: currentPageAccounts[i].email,
         branchUuid: currentPageAccounts[i].branchUuid,
@@ -1041,6 +1041,7 @@ app.get("/accounts", verifyToken, async (req, res) => {
   }
 
   try {
+    console.log("Source:   ",source);
     const filteredAccounts = await getAllAccounts(source, fromDate, toDate);
     console.log(filteredAccounts.length);
 
