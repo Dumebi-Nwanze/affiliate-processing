@@ -675,6 +675,39 @@ app.post("/create-lead", verifyToken, async (req, res) => {
                 message: "Match Trade Account Created successfully",
                 responseData: response,
               });
+              console.log("Push to sheets");
+        //Push to All leads 2 sheet
+        const tbpDate = new Date().toISOString();
+        fetch(
+          "https://sheet.best/api/sheets/c9adf0ee-f4da-4bfc-9d8e-4dbce9268884", //All Leads 2 Sheet
+          {
+            method: "POST",
+            mode: "cors",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              Name: name,
+              Surname: surname,
+              Email: email,
+              Phone: phoneNumber,
+              Created_At: tbpDate,
+              Source: purchasesite,
+            }),
+          }
+        )
+          .then((r) => r.json())
+          .then((data) => {
+            console.log("Added to All Leads 2 sheet successfully: ", data);
+            res
+              .status(200)
+              .send(
+                "Uploaded lead successfully to Dialer and All leads 2 sheet"
+              );
+          })
+          .catch((error) => {
+            console.error(error);
+          });
               res.status(200).send({
                 statusCode: response.status,
                 status: "SUCCESS",
