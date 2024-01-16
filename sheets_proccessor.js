@@ -159,7 +159,7 @@ const getAllAccounts = async (source, fromDate, toDate) => {
         created: currentPageAccounts[i].created,
         updated: currentPageAccounts[i].updated,
         leadInfo: {
-          leadSource:currentPageAccounts[i].leadSource,
+          leadSource: currentPageAccounts[i].leadSource,
         },
         email: currentPageAccounts[i].email,
         branchUuid: currentPageAccounts[i].branchUuid,
@@ -640,7 +640,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
         purchasesite,
         supportsite,
         country,
-        13,
+        13
       ).then(async (response) => {
         console.log("Did Dialer succeed: ", response);
 
@@ -649,12 +649,12 @@ app.post("/create-lead", verifyToken, async (req, res) => {
             offerUuid: offerUuid,
             createAsDepositedAccount: false,
             accountManager: null,
-            branchUuid: branchUuid,
             password: password,
             account: {
               //uuid: uuid,
               email: email,
               name: name,
+              branchUuid: branchUuid,
               surname: surname,
               phone: phoneNumber,
               country: country,
@@ -676,38 +676,41 @@ app.post("/create-lead", verifyToken, async (req, res) => {
                 responseData: response,
               });
               console.log("Push to sheets");
-        //Push to All leads 2 sheet
-        const tbpDate = new Date().toISOString();
-        fetch(
-          "https://sheet.best/api/sheets/c9adf0ee-f4da-4bfc-9d8e-4dbce9268884", //All Leads 2 Sheet
-          {
-            method: "POST",
-            mode: "cors",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              Name: name,
-              Surname: surname,
-              Email: email,
-              Phone: phoneNumber,
-              Created_At: tbpDate,
-              Source: purchasesite,
-            }),
-          }
-        )
-          .then((r) => r.json())
-          .then((data) => {
-            console.log("Added to All Leads 2 sheet successfully: ", data);
-            res
-              .status(200)
-              .send(
-                "Uploaded lead successfully to Dialer and All leads 2 sheet"
-              );
-          })
-          .catch((error) => {
-            console.error(error);
-          });
+              //Push to All leads 2 sheet
+              const tbpDate = new Date().toISOString();
+              fetch(
+                "https://sheet.best/api/sheets/c9adf0ee-f4da-4bfc-9d8e-4dbce9268884", //All Leads 2 Sheet
+                {
+                  method: "POST",
+                  mode: "cors",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    Name: name,
+                    Surname: surname,
+                    Email: email,
+                    Phone: phoneNumber,
+                    Created_At: tbpDate,
+                    Source: purchasesite,
+                  }),
+                }
+              )
+                .then((r) => r.json())
+                .then((data) => {
+                  console.log(
+                    "Added to All Leads 2 sheet successfully: ",
+                    data
+                  );
+                  res
+                    .status(200)
+                    .send(
+                      "Uploaded lead successfully to Dialer and All leads 2 sheet"
+                    );
+                })
+                .catch((error) => {
+                  console.error(error);
+                });
               res.status(200).send({
                 statusCode: response.status,
                 status: "SUCCESS",
@@ -725,13 +728,11 @@ app.post("/create-lead", verifyToken, async (req, res) => {
               console.log("An error occurred while creating an account");
               console.log("Error:", response);
               if (response.data.status === "CONFLICT") {
-                return res
-                  .status(200)
-                  .send({
-                    statusCode: 200,
-                    status: "FAILURE",
-                    message: "Duplicate error",
-                  });
+                return res.status(200).send({
+                  statusCode: 200,
+                  status: "FAILURE",
+                  message: "Duplicate error",
+                });
               }
               return res
                 .status(500)
@@ -899,7 +900,13 @@ app.get("/ftd-clients", verifyToken, async (req, res) => {
       })
     );
 
-    res.status(200).send({amount:formattedDeposits.length, data: formattedDeposits, message: "SUCCESS" });
+    res
+      .status(200)
+      .send({
+        amount: formattedDeposits.length,
+        data: formattedDeposits,
+        message: "SUCCESS",
+      });
   } catch (e) {
     console.error("Error: ", e);
     res
@@ -1041,11 +1048,17 @@ app.get("/accounts", verifyToken, async (req, res) => {
   }
 
   try {
-    console.log("Source:   ",source);
+    console.log("Source:   ", source);
     const filteredAccounts = await getAllAccounts(source, fromDate, toDate);
     console.log(filteredAccounts.length);
 
-    return res.status(200).send({amount:filteredAccounts.length, data: filteredAccounts, message: "SUCCESS",});
+    return res
+      .status(200)
+      .send({
+        amount: filteredAccounts.length,
+        data: filteredAccounts,
+        message: "SUCCESS",
+      });
   } catch (error) {
     console.log("INTERNAL SERVER ERROR::::CANT GET ACCOUNTS");
     return res.status(500).send("INTERNAL SERVER ERROR::::CANT GET ACCOUNTS");
