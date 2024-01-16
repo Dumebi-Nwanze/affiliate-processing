@@ -159,7 +159,7 @@ const getAllAccounts = async (source, fromDate, toDate) => {
         created: currentPageAccounts[i].created,
         updated: currentPageAccounts[i].updated,
         leadInfo: {
-          leadSource:currentPageAccounts[i].leadInfo? currentPageAccounts[i].leadInfo.leadSource:null,
+          leadSource:currentPageAccounts[i].leadInfo? currentPageAccounts[i].leadInfo.leadSource:currentPageAccounts[i].leadSource,
         },
         email: currentPageAccounts[i].email,
         branchUuid: currentPageAccounts[i].branchUuid,
