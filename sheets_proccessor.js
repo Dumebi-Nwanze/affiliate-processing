@@ -702,11 +702,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
                     "Added to All Leads 2 sheet successfully: ",
                     data
                   );
-                  res
-                    .status(200)
-                    .send(
-                      "Uploaded lead successfully to Dialer and All leads 2 sheet"
-                    );
+                 
                 })
                 .catch((error) => {
                   console.error(error);
