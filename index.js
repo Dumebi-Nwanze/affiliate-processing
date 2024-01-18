@@ -1,11 +1,10 @@
-const express = require('express');
-const app = require('./sheets_proccessor');
-const axios = require('axios')
-
+const express = require("express");
+const app = require("./sheets_proccessor");
+const axios = require("axios");
 
 const port = process.env.PORT || 80;
 
-var authToken = ""
+var authToken = "";
 
 async function getToken() {
   const data = new URLSearchParams();
@@ -41,7 +40,7 @@ async function partialUpdate(uid, status) {
     "Failed To Connect": "NO_POTENTIAL",
     Duplicate: "NO_POTENTIAL",
     "Do Not Call": "NO_POTENTIAL",
-    Underaged: "NO_POTENTIAL",
+    Underage: "NO_POTENTIAL",
     "Hang up": "NEED_ANALYSIS",
     Declined: "NEED_ANALYSIS",
     "Language Barrier": "NEED_ANALYSIS",
@@ -71,6 +70,13 @@ async function partialUpdate(uid, status) {
     Deposit: "d5e65291-3911-41e9-86a7-70c6c95c856e",
     "No Answer": "d118305a-fc6b-42e1-98e6-96181c2822ad",
     "Not Interested": "1a7b52e1-adae-4a2e-b158-4f43d75e3da4",
+    Underage: "64dcfbf6-3f9f-494d-9e60-bcb67c136006",
+    "System - Answer (Dropped)": "cd2b1cb9-2bfa-4b2d-86e1-af2449cebb33",
+    "Hang up": "1425f8e1-25e4-4399-9f34-bde5e0c154e2",
+    Declined: "998561cb-69ff-489a-80a9-31d21cf12112",
+    "Wrong person": "9d4f5924-5e30-4cc3-88c0-62f4987aa03b",
+    VoiceMail: "5820dff9-5891-4871-91ae-c5d10f6d74be",
+    "Active client": "65f61006-93f8-4f20-94df-b642f70c9038",
   };
   await getToken()
     .then((accessToken) => {
@@ -81,9 +87,9 @@ async function partialUpdate(uid, status) {
       console.error("Error:", error.message);
     });
   //console.log(authToken);
-  console.log("Status is:::::::::: ",status);
-  console.log("Status Mappings is:::::::::: ",statusMappings[status]);
-  console.log("Status id map is:::::::::: ",statusIdMap[status]);
+  console.log("Status is:::::::::: ", status);
+  console.log("Status Mappings is:::::::::: ", statusMappings[status]);
+  console.log("Status id map is:::::::::: ", statusIdMap[status]);
   const servertimenow = new Date().toISOString();
   try {
     const response = await axios.patch(
@@ -91,13 +97,15 @@ async function partialUpdate(uid, status) {
       JSON.stringify({
         leadStatus: {
           leadStage:
-            status === "Deposit" ? "CONTACTED" : statusMappings[status],
+            status === "Deposit"
+              ? "CONTACTED"
+              : statusMappings[status] || statusMappings["Default Status"],
           name: status === "Deposit" ? "Personal Meeting" : status,
           enabled: true,
           uuid:
             status === "Deposit"
               ? statusIdMap["Personal Meeting"]
-              : statusIdMap[status],
+              : statusIdMap[status] || statusIdMap["Default Status"],
           partnerId: 76,
           updated: servertimenow,
         },
@@ -124,7 +132,7 @@ async function partialUpdate(uid, status) {
   }
 }
 
-const getDailerCampaignLeads = async (id) => {
+const getDailerCampaignLeads = async (id, campaign_id) => {
   const apiUrl = `https://mc.td.commpeak.com/api/campaign-leads/limit/2/order/created_at/lead_id/${id}`;
   const headers = {
     accept: "*/*",
@@ -134,11 +142,15 @@ const getDailerCampaignLeads = async (id) => {
 
   try {
     const response = await axios.get(apiUrl, { headers });
-    console.log(response.data.campaignLeads);
-    console.log(
-      response.data.campaignLeads[response.data.campaignLeads.length - 1]
+    //console.log(response.data.campaignLeads);
+    // console.log(
+    //   response.data.campaignLeads[response.data.campaignLeads.length - 1]
+    // );
+    const filteredAcc = response.data.campaignLeads.filter(
+      (acc) => acc.campaign_id === campaign_id
     );
-    return response.data.campaignLeads[response.data.campaignLeads.length - 1];
+    console.log(filteredAcc[filteredAcc.length - 1]);
+    return filteredAcc[filteredAcc.length - 1];
   } catch (error) {
     console.log(error.response.data);
     return null;
@@ -190,9 +202,7 @@ const getAllAccounts3 = async (source, fromDate, toDate) => {
   return fileteredAccounts;
 };
 
-const getDailerLeads = async () => {
-  
-
+const getDailerLeads = async (source) => {
   let allLeads = [];
 
   try {
@@ -200,12 +210,12 @@ const getDailerLeads = async () => {
     let hasMoreLeads = true;
 
     while (hasMoreLeads) {
-      const apiUrl = `https://mc.td.commpeak.com/api/leads/limit/500;${offset}/purchase_site/a-cohen/created_at/2023-12-21%2013:15:11;>`;
-  const headers = {
-    accept: "*/*",
-    Authorization: `Basic ${btoa("developer2:QddYW1F3wVOx")}`,
-    "Content-Type": "application/json",
-  };
+      const apiUrl = `https://mc.td.commpeak.com/api/leads/limit/500;${offset}/purchase_site/${source}/created_at/2023-12-21%2013:15:11;>`;
+      const headers = {
+        accept: "*/*",
+        Authorization: `Basic ${btoa("developer2:QddYW1F3wVOx")}`,
+        "Content-Type": "application/json",
+      };
       const response = await axios.get(apiUrl, { headers });
       const leads = response.data.leads;
 
@@ -214,7 +224,7 @@ const getDailerLeads = async () => {
         hasMoreLeads = false;
       }
 
-  allLeads.push(...leads);
+      allLeads.push(...leads);
       offset += 500;
     }
 
@@ -230,28 +240,69 @@ const getDailerLeads = async () => {
   }
 };
 
-const updateSelectAccounts = async () => {
+const updateSelectAccounts = async (source) => {
+  // const statusMap = {
+  //   1: "Busy",
+  //   8: "Invalid Phone",
+  //   5: "Duplicate",
+  //   4: "Do Not Call",
+  //   10: "New Contact",
+  //   13: "Personal Meeting",
+  //   7: "General Meeting",
+  //   2: "Default Status",
+  //   9: "Language Barrier",
+  //   6: "Failed To Connect",
+  //   3: "Deposit",
+  //   11: "No Answer",
+  //   12: "Not Interested",
+  // };
+
   const statusMap = {
+    103: "Busy",
+    104: "Default Status",
+    105: "Deposit",
+    106: "Do Not Call",
+    107: "Duplicate",
+    108: "Failed To Connect",
+    109: "General Meeting",
+    110: "Hang up",
+    111: "Interested",
+    112: "Invalid Phone",
+    113: "Language Barrier",
+    114: "New Contact",
+    115: "No Answer",
+    116: "Not Interested",
+    117: "Personal Meeting",
+    118: "System - Answer (Dropped)",
+    119: "Underage",
+    120: "VoiceMail",
+    121: "Wrong Person",
     1: "Busy",
-    8: "Invalid Phone",
-    5: "Duplicate",
-    4: "Do Not Call",
-    10: "New Contact",
-    13: "Personal Meeting",
-    7: "General Meeting",
     2: "Default Status",
-    9: "Language Barrier",
-    6: "Failed To Connect",
     3: "Deposit",
+    4: "Do Not Call",
+    5: "Duplicate",
+    6: "Failed To Connect",
+    7: "General Meeting",
+    19: "Hang up",
+    20: "Interested",
+    8: "Invalid Phone",
+    9: "Language Barrier",
+    10: "New Contact",
     11: "No Answer",
     12: "Not Interested",
+    13: "Personal Meeting",
+    14: "System - Answer (Dropped)",
+    15: "Underage",
+    16: "VoiceMail",
+    17: "Wrong Person",
   };
 
   let totalAccUpdated = 0;
 
   try {
-    const dailerAccounts = await getDailerLeads();
-    const accounts = await getAllAccounts3("a-cohen");
+    const dailerAccounts = await getDailerLeads(source);
+    const accounts = await getAllAccounts3(source);
 
     console.log("Total MT Accounts: ", accounts.length);
     console.log("Total Dailer Accounts: ", dailerAccounts.length);
@@ -261,7 +312,7 @@ const updateSelectAccounts = async () => {
 
       if (mtAccount && mtAccount.leadStatus !== "Deposit") {
         console.log("Found MT Account...");
-        const campaLead = await getDailerCampaignLeads(dacc.id);
+        const campaLead = await getDailerCampaignLeads(dacc.id, "13");
 
         if (campaLead) {
           await partialUpdate(
@@ -289,11 +340,10 @@ const updateSelectAccounts = async () => {
     console.error("Error in updateSelectAccounts:", error);
   }
 };
-updateSelectAccounts()
-setInterval(()=>{
-  updateSelectAccounts()
+updateSelectAccounts("TMS");
+setInterval(() => {
+  updateSelectAccounts("TMS");
 }, 7200000);
-
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
