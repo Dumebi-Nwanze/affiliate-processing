@@ -5,24 +5,18 @@ const cors = require("cors");
 const axios = require("axios");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
 const fs = require("fs");
-const {
-  initializeApp,
-  cert,
-} = require("firebase-admin/app");
-const {
-  getFirestore,
-  Timestamp,
-  FieldValue,
-  Filter,
-} = require("firebase-admin/firestore");
-const serviceAccount = require("./serviceKey.json");
 require("dotenv").config();
+const bodyParser = require("body-parser");
+const admin = require("firebase-admin");
+const credentials = require("./service_key.json");
 
-// const middlewares = require("./middlewares");
-// const api = require("./api");
-const { log } = require("console");
+admin.initializeApp({
+  credential: admin.credential.cert(credentials),
+});
+
+const db = admin.firestore();
+
 
 const app = express();
 
@@ -30,15 +24,7 @@ app.use(morgan("dev"));
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
-
-//Firebase Initialization
-
-initializeApp({
-  credential: cert(serviceAccount),
-  databaseURL: ""
-});
-
-const db = getFirestore();
+app.use(bodyParser.urlencoded({ extended: true }));
 
 const validateToken = (req, res, next) => {
   const authToken = req.headers.authorization;
@@ -119,30 +105,84 @@ async function sendLeadToMatchTrade(data) {
     };
   }
 }
-async function getLeadsFromMatchTrade(page) {
-  const date = new Date().toISOString();
-  try {
-    const response = await axios.get(
-      `https://bo-mtrwl.match-trade.com/documentation/account/api/partner/76/accounts/view?query=%40&from=2023-12-10T09:57:26.000Z&to=${date}&sort[sorted]=true&sort[unsorted]=true&sort[empty]=true&pageSize=0&pageNumber=${page}&paged=true&unpaged=true&offset=0`,
 
-      {
-        headers: {
-          Accept: "*/*",
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
+
+const getAllAccounts = async (source, fromDate, toDate) => {
+  await getToken()
+    .then((accessToken) => {
+      console.log("Access Token:", accessToken);
+      authToken = accessToken;
+    })
+    .catch((error) => {
+      console.error("Error:", error.message);
+    });
+
+  const accounts = [];
+  let currentPage = 0;
+  let totalPages = 1;
+
+  do {
+    const servertimenow = new Date().toISOString();
+    const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/account/api/partner/76/leads/view?from=${
+      fromDate ?? "2023-12-21T00%3A00%3A00Z"
+    }&to=${toDate ?? servertimenow}&size=2000&page=${currentPage}&query`;
+    const headers = {
+      accept: "*/*",
+      Authorization: `Bearer ${authToken}`,
+    };
+
+    const response = await axios.get(apiUrl, { headers });
+    totalPages = response.data.totalPages;
+    const currentPageAccounts = response.data.content;
+    for (let i = 0; i < currentPageAccounts.length; i++) {
+      accounts.push({
+        uuid: currentPageAccounts[i].uuid,
+        created: currentPageAccounts[i].created,
+        updated: currentPageAccounts[i].updated,
+        leadInfo: {
+          leadSource: currentPageAccounts[i].leadSource,
         },
-      }
-    );
+        email: currentPageAccounts[i].email,
+        branchUuid: currentPageAccounts[i].branchUuid,
+        name: currentPageAccounts[i].name,
+        surname: currentPageAccounts[i].surname,
+        phone: currentPageAccounts[i].phone,
+        country: currentPageAccounts[i].country,
+        role: currentPageAccounts[i].role,
+        leadStatus: currentPageAccounts[i].leadStatus,
+        leadSource: currentPageAccounts[i].leadSource,
+      });
+    }
+    currentPage++;
+  } while (currentPage < totalPages);
 
+  console.log("Total accounts:", accounts.length);
+  const fileteredAccounts = accounts.filter(
+    (res) => res?.leadInfo?.leadSource?.includes(source) ?? false
+  );
+  console.log("Total filtered accounts:", fileteredAccounts.length);
+  return fileteredAccounts;
+};
+
+const getClientAccounts = async (email) => {
+  const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/account/api/partners/76/accounts/by-email?email=${email}`;
+  const headers = {
+    accept: "*/*",
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${authToken}`,
+  };
+
+  try {
+    const response = await axios.get(apiUrl, { headers });
     return {
-      status: response.status,
-      data: response.data.content,
+      status: "SUCCESS",
+      data: response.data,
     };
   } catch (error) {
-    console.error("Error:", error.message);
-    throw error;
+    console.log("Error: ", error.response.data);
+    return error.response.data;
   }
-}
+};
 
 /**    Push to MatchTrade Code End */
 
@@ -155,7 +195,8 @@ async function pushToDialer(
   source,
   purchasesite,
   supportsite,
-  country
+  country,
+  campaignid
 ) {
   console.log("Pushing to dialer");
   let date_ob = new Date();
@@ -239,7 +280,6 @@ async function pushToDialer(
         return response.json();
       })
       .then(async (data) => {
-        // Process the response data here
         console.log("Sucessfully added lead; LeadID: ", data.leads[0].id);
 
         console.log("Successfully pushed lead to dialer");
@@ -317,7 +357,6 @@ async function pushToDialer(
                 );
               });
 
-            // Process the response data here
           })
           .catch(async (error) => {
             console.error("Error occurred during mass assign: ", error);
@@ -337,7 +376,7 @@ async function pushToDialer(
 
 //Get Deposits
 
-const getDeposits = async () => {
+const getDeposits = async (fromDate, toDate) => {
   await getToken()
     .then((accessToken) => {
       //console.log("Access Token:", accessToken);
@@ -346,17 +385,33 @@ const getDeposits = async () => {
     .catch((error) => {
       console.error("Error:", error.message);
     });
-  const servertimenow = new Date().toISOString();
-  const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/payment/api/partner/76/deposits/deposit-view-model?query=${"@"}&from=2023-12-10T09:57:26.000Z&to=${servertimenow}&sort%5Bsorted%5D=true&sort%5Bunsorted%5D=true&sort%5Bempty%5D=true&pageSize=20&pageNumber=3&paged=true&unpaged=true&offset=0`;
-  const headers = {
-    accept: "*/*",
-    Authorization: `Bearer ${authToken}`,
-  };
 
-  const response = await axios.get(apiUrl, { headers });
+  const deposits = [];
+  let currentPage = 0;
+  let totalPages = 1;
 
-  console.log(response.data.content);
-  return response.data.content;
+  do {
+    const servertimenow = new Date().toISOString();
+    const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/payment/api/partner/76/deposits/deposit-view-model?from=${
+      fromDate ?? "2023-12-21T00%3A00%3A00Z"
+    }&to=${toDate ?? servertimenow}&size=2000&page=${currentPage}&query`;
+
+    const headers = {
+      accept: "*/*",
+      Authorization: `Bearer ${authToken}`,
+    };
+
+    const response = await axios.get(apiUrl, { headers });
+    totalPages = response.data.totalPages;
+    // console.log(totalPages);
+    const currentPageDeposits = response.data.content;
+
+    deposits.push(...currentPageDeposits);
+    currentPage++;
+  } while (currentPage < totalPages);
+
+  console.log("Total deposits:", deposits.length);
+  return deposits;
 };
 
 /**    Push to Dialer Code End */
@@ -384,136 +439,73 @@ function verifyToken(req, res, next) {
   });
 }
 
-async function readUsersFromFB() {
-  // try {
-  //   const data = fs.readFileSync("./users.json");
-  //   return JSON.parse(data);
-  // } catch (error) {
-  //   return [];
-  // }
-  const users = [];
-
-  
-    const snapshot = await db.collection("users").get();
-    snapshot.forEach((doc) => {
-      users.push(doc.data());
-    });
-    return users;
- 
-}
-
-async function readKeysFromFB() {
-  const keys = [];
+// Function to read user data from the JSON file
+async function readUsersFile() {
   try {
-    const snapshot = await db.collection("keys").get();
-    console.log(db);
-    snapshot.forEach((doc) => {
-      keys.push(doc.data());
-    });
-    return users;
-  } catch (e) {
-    console.log("Error while reading keys from Firebase store");
-    //throw new Error("Error while reading keys from Firebase store");
-  }
-}
-async function readSufficesFromFB() {
-  const suffices = [];
-  try {
-    const snapshot = await db.collection("suffices").get();
-    snapshot.forEach((doc) => {
-      suffices.push(doc.data());
-    });
-    return suffices;
-  } catch (e) {
-    console.log("Error while reading suffices from Firebase store");
-    throw new Error("Error while reading suffices from Firebase store");
+    const data = fs.readFileSync("./users.json");
+    return JSON.parse(data);
+  } catch (error) {
+    return [];
   }
 }
 
 // Function to write user data to the JSON file
-async function writeUsersToFB(user) {
-  // const users = JSON.parse(fs.readFileSync("./users.json"));
-  // if (users) {
-  //   users.push(user);
-  //   fs.writeFileSync("./users.json", JSON.stringify(users));
-  // } else {
-  //   return "Couldn't write users";
-  // }
-  const collectionRef = db.collection("users");
+async function writeUsersFile(user) {
+  const users = JSON.parse(fs.readFileSync("./users.json"));
+  if (users) {
+    users.push(user);
+    fs.writeFileSync("./users.json", JSON.stringify(users));
+  } else {
+    return "Couldn't write users";
+  }
+}
+
+// Write document to firestore
+const writeToFirestore = async (collectionname, purchasesite, data) => {
   try {
-    const newDocRef = await collectionRef.add(user);
-    console.log("Document added with ID:", newDocRef.id);
+    await db.collection(collectionname).doc(purchasesite).set(data);
+    console.log("Successfully wrote to firestore");
   } catch (e) {
-    console.log("Error while writing " + user + "to Firebase store");
-    throw new Error("Error while writing " + user + "to Firebase store");
+    console.log(e);
+    throw e;
   }
-}
+};
 
-async function writeKeysToFB(keys) {
-  const collectionRef = db.collection("keys");
+// Read document from firestore
+const readFromFirestore = async (collectionname, doc) => {
   try {
-    const newDocRef = await collectionRef.add(user);
-    console.log("Document added with ID:", newDocRef.id);
+    const res = await db.collection(collectionname).doc(doc).get();
+    if (res.exists) {
+      const map = res.data();
+      return map[doc];
+    }
   } catch (e) {
-    console.log("Error while writing " + keys + "to Firebase store");
-    throw new Error("Error while writing " + keys + "to Firebase store");
+    console.log(e);
+    throw e;
   }
-}
-async function writeSuffixToFB(suffix) {
-  const collectionRef = db.collection("suffices");
+};
+// Read All document from firestore
+const readAllFromFirestore = async (collectionname) => {
   try {
-    const newDocRef = await collectionRef.add(suffix);
-    console.log("Document added with ID:", newDocRef.id);
+    const res = await db.collection(collectionname).get();
+    const resarr = res.docs.map((doc) => doc.data());
+    return resarr;
   } catch (e) {
-    console.log("Error while writing " + suffix + "to Firebase store");
-    throw new Error("Error while writing " + suffix + "to Firebase store");
+    console.log(e);
+    throw e;
   }
-}
+};
 
-function formatDate(date) {
-  if (new Date(date)) {
-    return new Date(date).getTime();
-  }
-  const [datePart, timePart] = date.split(" ");
-  let fday;
-  let fmonth;
-  let fyear;
-  if (datePart.includes(".")) {
-    const [day, month, year] = datePart.split(".").map(Number);
-    fday = day;
-    fmonth = month;
-    fyear = year;
-  } else if (datePart.includes("-")) {
-    const [day, month, year] = datePart.split("-").map(Number);
-    fday = day;
-    fmonth = month;
-    fyear = year;
-  }
 
-  const [hours, minutes, seconds] = timePart.split(":").map(Number);
-  return new Date(fyear, fmonth - 1, fday, hours, minutes, seconds).getTime();
-}
-function generateRandomString() {
-  const characters = "0123456789";
-  let randomString = "";
 
-  for (let i = 0; i < 12; i++) {
-    const randomIndex = Math.floor(Math.random() * characters.length);
-    randomString += characters.charAt(randomIndex);
-  }
-
-  return randomString;
-}
 app.post("/getAccessToken", async (req, res) => {
   const { username, password } = req.body;
   console.log(req.body);
 
-  // Retrieve user data from the JSON file
-  const users = await readUsersFromFB();
+  const users = await readAllFromFirestore("users");
   console.log(users);
 
-  // Find user by username
-  const user = users.filter((u) => u.username === username)[0] ?? null;
+  const user = users.filter((u) => u.username === username)[0]?? null;
 
   console.log(user);
 
@@ -521,7 +513,6 @@ app.post("/getAccessToken", async (req, res) => {
     return res.status(401).json({ message: "Invalid credentials" });
   }
 
-  // Generate an access token
   const accessToken = jwt.sign(
     { user, dynamicElement: crypto.randomUUID() },
     process.env.SECRET_KEY,
@@ -547,73 +538,28 @@ app.post("/create-lead", verifyToken, async (req, res) => {
     branchUuid,
     offerUuid,
     password,
-    leadProviderId,
   } = req.body;
   console.log(req.body);
   let adminUuid;
+  let uuid;
   let suffix;
   try {
-    var keys = await readKeysFromFB();
-
-    adminUuid =
-      keys.filter((key) => Object.keys(key)[0] === purchasesite)[0]?.[
-        purchasesite
-      ] ?? null;
+    adminUuid = await readFromFirestore("keys", purchasesite);
 
     if (!adminUuid) {
       adminUuid = crypto.randomUUID();
-      try {
-        await writeKeysToFB({ [purchasesite]: adminUuid });
-      } catch (error) {
-        console.log("INTERNAL SERVER ERROR:::CANT WRITE KEYS:::::::", error);
-        return res
-          .status(500)
-          .send({ message: "INTERNAL SERVER ERROR:::CANT WRITE KEYS", error });
-      }
 
-      // fs.writeFileSync("./keys.json", JSON.stringify(keys));
+      await writeToFirestore("keys", purchasesite, {
+        [purchasesite]: adminUuid,
+      }).catch((e) => {
+        throw e;
+      });
     }
   } catch (error) {
-    console.log("INTERNAL SERVER ERROR:::CANT READ KEYS:::::::", error);
-    return res
-      .status(500)
-      .send({ message: "INTERNAL SERVER ERROR:::CANT READ KEYS", error });
+    console.error("Error reading/writing keys:", error);
+    return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ/WRITE KEYS");
   }
-  try {
-    var suffices = await readSufficesFromFB();
 
-    if (!adminUuid) {
-      console.log("INTERNAL SERVER ERROR:::ADMIN UUID WAS NOT READ");
-      return res
-        .status(500)
-        .send("INTERNAL SERVER ERROR:::ADMIN UUID WAS NOT READ");
-    }
-    suffix =
-      suffices.filter((s) => Object.keys(s)[0] === adminUuid)[0]?.[adminUuid] ??
-      null;
-    if (!suffix) {
-      suffix = generateRandomString();
-      try {
-        await writeSuffixToFB({ [adminUuid]: suffix });
-      } catch (error) {
-        console.log(
-          "INTERNAL SERVER ERROR:::CANT WRITE SUFFICES:::::::",
-          error
-        );
-        return res
-          .status(500)
-          .send({
-            message: "INTERNAL SERVER ERROR:::CANT WRITE SUFFICES",
-            error,
-          });
-      }
-    }
-  } catch (error) {
-    console.log("INTERNAL SERVER ERROR:::CANT READ SUFFICES:::::::", error);
-    return res
-      .status(500)
-      .send({ message: "INTERNAL SERVER ERROR:::CANT READ SUFFICES", error });
-  }
   await getToken()
     .then((accessToken) => {
       console.log("Access Token:", accessToken);
@@ -623,16 +569,6 @@ app.post("/create-lead", verifyToken, async (req, res) => {
       console.error("Error:", error.message);
     });
 
-  // if (!uuid) {
-  //   console.log("INTERNAL SERVER ERROR:::CANT CREATE UUID");
-  //   return res.status(500).send("INTERNAL SERVER ERROR:::CANT CREATE UUID");
-  // }
-  if (!suffix) {
-    console.log("INTERNAL SERVER ERROR:::CANT READ OR CREATE SUFFIX");
-    return res
-      .status(500)
-      .send("INTERNAL SERVER ERROR:::CANT READ OR CREATE SUFFIX");
-  }
   (async () => {
     try {
       await pushToDialer(
@@ -643,7 +579,8 @@ app.post("/create-lead", verifyToken, async (req, res) => {
         source,
         purchasesite,
         supportsite,
-        country
+        country,
+        13
       ).then(async (response) => {
         console.log("Did Dialer succeed: ", response);
 
@@ -652,17 +589,18 @@ app.post("/create-lead", verifyToken, async (req, res) => {
             offerUuid: offerUuid,
             createAsDepositedAccount: false,
             accountManager: null,
-            branchUuid: branchUuid,
             password: password,
             account: {
+              //uuid: uuid,
               email: email,
               name: name,
+              branchUuid: branchUuid,
               surname: surname,
               phone: phoneNumber,
+              country: country,
               partnerId: 76,
-              leadProviderUuid:leadProviderId,
               leadInfo: {
-                leadSource: `${purchasesite}-${suffix}`,
+                leadSource: purchasesite,
               },
             },
 
@@ -671,24 +609,75 @@ app.post("/create-lead", verifyToken, async (req, res) => {
           console.log(matchTradeData);
           try {
             const response = await sendLeadToMatchTrade(matchTradeData);
-            
+
             if (response.status === 200) {
               console.log({
                 message: "Match Trade Account Created successfully",
                 responseData: response,
               });
+              console.log("Push to sheets");
+              //Push to All leads 2 sheet
+              const tbpDate = new Date().toISOString();
+              fetch(
+                "https://sheet.best/api/sheets/c9adf0ee-f4da-4bfc-9d8e-4dbce9268884", //All Leads 2 Sheet
+                {
+                  method: "POST",
+                  mode: "cors",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    Name: name,
+                    Surname: surname,
+                    Email: email,
+                    Phone: phoneNumber,
+                    Created_At: tbpDate,
+                    Source: purchasesite,
+                  }),
+                }
+              )
+                .then((r) => r.json())
+                .then((data) => {
+                  console.log(
+                    "Added to All Leads 2 sheet successfully: ",
+                    data
+                  );
+                })
+                .catch((error) => {
+                  console.error(error);
+                });
               res.status(200).send({
+                statusCode: response.status,
+                status: "SUCCESS",
                 message: "Store this admin uuid in a safe place",
                 adminUuid: adminUuid,
+                data: {
+                  account_uuid: response.data.uuid,
+                  created: response.data.created,
+                  email: response.data.email,
+                  name: response.data.name,
+                  surname: response.data.surname,
+                },
               });
             } else {
               console.log("An error occurred while creating an account");
               console.log("Error:", response);
-              res.status(500).send({ error: "INTERNAL_SERVER_ERROR", message: response });
+              if (response.data.status === "CONFLICT") {
+                return res.status(200).send({
+                  statusCode: 200,
+                  status: "FAILURE",
+                  message: "Duplicate error",
+                });
+              }
+              return res
+                .status(500)
+                .send({ error: "INTERNAL_SERVER_ERROR", message: response });
             }
           } catch (error) {
             console.error("An error occurred: ", error.message);
-            res.status(500).send({ error: "INTERNAL_SERVER_ERROR", message: error.message });
+            res
+              .status(500)
+              .send({ error: "INTERNAL_SERVER_ERROR", message: error.message });
           }
         }
       });
@@ -699,29 +688,84 @@ app.post("/create-lead", verifyToken, async (req, res) => {
     }
   })();
 });
+function isValidISOString(dateString) {
+  const date = new Date(dateString);
+  return date instanceof Date && !isNaN(date);
+}
 
-app.get("/leads", verifyToken, async (req, res) => {
-  const { adminUuid } = req.body;
+function getFirstDoneDeposits(deposits, source) {
+  const depositBuckets = {};
+
+  deposits.forEach((deposit) => {
+    const accountUuid = deposit.accountUuid;
+
+    if (!depositBuckets[accountUuid]) {
+      depositBuckets[accountUuid] = [];
+    }
+
+    depositBuckets[accountUuid].push(deposit);
+  });
+
+  const earliestDoneDeposits = [];
+
+  Object.keys(depositBuckets).forEach((accountUuid) => {
+    const depositsForAccount = depositBuckets[accountUuid];
+
+    const doneDeposits = depositsForAccount.filter(
+      (deposit) =>
+        deposit.status === "DONE" && deposit.accountLeadSource?.includes(source)
+    );
+
+    if (doneDeposits.length > 0) {
+      const sortedDoneDeposits = doneDeposits.sort(
+        (a, b) => new Date(a.created) - new Date(b.created)
+      );
+
+      earliestDoneDeposits.push(sortedDoneDeposits[0]);
+    }
+  });
+
+  return earliestDoneDeposits;
+}
+
+app.get("/ftd-clients", verifyToken, async (req, res) => {
+  const { adminUuid, fromDate, toDate } = req.body;
+  let source;
   console.log(req.body);
-  let suffix;
-  if (!adminUuid) {
-    console.log("PROVIDE A VALID ADMIN UUID");
-    return res.status(400).send("PROVIDE A VALID ADMIN UUID");
+  if (
+    !adminUuid ||
+    isValidISOString(fromDate) === false ||
+    isValidISOString(toDate) === false
+  ) {
+    console.log("DATE OR ADMIN UUID IS INCORRECT");
+    return res.status(400).send("BAD REQUEST:::::CHECK REQUEST BODY");
   }
+  let suffix;
   try {
-    var suffices = await readSufficesFromFB();
-    suffix =
-      suffices.filter((s) => Object.keys(s)[0] === adminUuid)[0]?.[adminUuid] ??
-      null;
-    if (!suffix) {
+    const keys = await readAllFromFirestore("keys");
+
+    if (!keys) {
+      console.log("INTERNAL SERVER ERROR:::CANT READ KEYS");
+      return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ KEYS");
+    }
+    console.log(keys);
+    ouuterLoop: for (const obj of keys) {
+      for (const key in obj) {
+        if (obj[key] === adminUuid) {
+          source = key;
+          break ouuterLoop;
+        }
+      }
+    }
+  
+
+    if (!source) {
       console.log("ADMIN UUID IS NOT FOUND IN STORE");
       return res.status(400).send("ADMIN UUID IS NOT FOUND IN STORE");
-    } 
+    }
   } catch (error) {
-    console.log("INTERNAL SERVER ERROR:::CANT READ SUFFICES:::::::", error);
-    return res
-      .status(500)
-      .send({ message: "INTERNAL SERVER ERROR:::CANT READ SUFFICES", error });
+    console.error("Error reading or parsing suffices:", error);
+    return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
   }
   await getToken()
     .then((accessToken) => {
@@ -733,77 +777,40 @@ app.get("/leads", verifyToken, async (req, res) => {
     });
   const allLeads = [];
   const allDeposits = [];
-  function isEarliestCreatedAtForAccount(deposit) {
-    // Find the lead with the earliest createdAt for the same accountUuid
-    const earliestCreatedAtDeposit = allDeposits.reduce(
-      (earliestDeposit, otherDeposit) => {
-        if (
-          otherDeposit.accountUuid === deposit.accountUuid &&
-          otherDeposit.status === "DONE" &&
-          (!earliestDeposit ||
-            new Date(otherDeposit.created) < new Date(earliestDeposit.created))
-        ) {
-          return otherDeposit;
-        }
-        return earliestDeposit;
-      },
-      null
-    );
 
-    // Check if the current lead has the earliest createdAt
-    return (
-      earliestCreatedAtDeposit &&
-      new Date(deposit.created) === new Date(earliestCreatedAtDeposit.created)
-    );
-  }
   try {
-    // let page = 0;
-
-    // while (true) {
-    //   const leads = await getLeadsFromMatchTrade(page);
-
-    //   if (!leads || leads.data.length === 0) {
-    //     // Break the loop if there are no more leads
-    //     break;
-    //   }
-
-    //   allLeads.push(...leads);
-    //   page++;
-
-    //   if (leads.data.length < 2000) {
-    //     // Break the loop if the number of leads is less than 2000
-    //     break;
-    //   }
-    // }
-
-    // console.log("All leads:", allLeads.length);
-
-    // const filteredLeads = allLeads.filter((lead) => {
-    //   const leadSuffix = lead.uuid.slice(-12);
-    //   return leadSuffix === suffix;
-    // });
-
-    const deposits = await getDeposits();
+    const deposits = await getDeposits(fromDate, toDate);
     allDeposits.push(...deposits);
 
-    const filteredDeposits = allDeposits.filter((deposit) => {
-      const leadSuffix = deposit.accountLeadSource?.split("-")[1];
-      return leadSuffix === suffix && isEarliestCreatedAtForAccount(deposit);
-    });
-    //console.log("Filtered leads:", filteredLeads.length);
+    const filteredDeposits = getFirstDoneDeposits(allDeposits, source);
     console.log("Filtered deposits:", filteredDeposits.length);
-    const formattedDeposits = [];
-    filteredDeposits.forEach((deposit) => {
-      formattedDeposits.push({
-        uuid: deposit.uuid,
-        accountUuid: deposit.accountUuid,
-        amount: deposit.amount,
-        status: deposit.status,
-        email: deposit.email,
-      });
-    });
+    const formattedDeposits = await Promise.all(
+      filteredDeposits.map(async (deposit) => {
+        const response = await getClientAccounts(deposit.email);
+        console.log({
+          uuid: deposit.uuid,
+          accountUuid: deposit.accountUuid,
+          ftd_date: deposit.created,
+          amount: deposit.amount,
+          status: response.data.leadStatus.name,
+          email: deposit.email,
+        });
+        return {
+          uuid: deposit.uuid,
+          accountUuid: deposit.accountUuid,
+          ftd_date: deposit.created,
+          amount: deposit.amount,
+          status: response.data.leadStatus.name,
+          email: deposit.email,
+        };
+      })
+    );
 
-    res.status(200).send({ data: formattedDeposits, message: "SUCCESS" });
+    res.status(200).send({
+      amount: formattedDeposits.length,
+      data: formattedDeposits,
+      message: "SUCCESS",
+    });
   } catch (e) {
     console.error("Error: ", e);
     res
@@ -812,8 +819,156 @@ app.get("/leads", verifyToken, async (req, res) => {
   }
 });
 
+app.get("/accounts-by-emails", verifyToken, async (req, res) => {
+  const { adminUuid, emails } = req.body;
+  let source;
+  console.log(req.body);
+  if (!adminUuid || !Array.isArray(emails)) {
+    console.log("ADMIN UUID OR EMAILS NOT ADDED");
+    return res.status(400).send("BAD REQUEST:::::CHECK REQUEST BODY");
+  }
+  try {
+    const keys = await readAllFromFirestore("keys");
+
+    if (!keys) {
+      console.log("INTERNAL SERVER ERROR:::CANT READ KEYS");
+      return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ KEYS");
+    }
+    console.log("Keys: ",keys);
+    ouuterLoop: for (const obj of keys) {
+      for (const key in obj) {
+        if (obj[key] === adminUuid) {
+          source = key;
+          break ouuterLoop;
+        }
+      }
+    }
+
+    if (!source) {
+      console.log("ADMIN UUID IS NOT FOUND IN STORE");
+      return res.status(400).send("ADMIN UUID IS NOT FOUND IN STORE");
+    }
+  } catch (error) {
+    console.error("Error reading or parsing suffices:", error);
+    return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
+  }
+
+  let emailsProcessed = 0;
+
+  try {
+    await getToken()
+      .then((accessToken) => {
+        authToken = accessToken;
+      })
+      .catch((error) => {
+        console.error("Error:", error.message);
+      });
+
+    const accountPromises = emails.map(async (email) => {
+      try {
+        const account = await getClientAccounts(email);
+        if (account.status === "SUCCESS") {
+          return account.data;
+        }
+      } catch (error) {
+        console.error(
+          `Error getting account: email : ${email}:`,
+          error.message
+        );
+      } finally {
+        emailsProcessed++;
+
+        if (emailsProcessed % 20 === 0) {
+          await getToken()
+            .then((accessToken) => {
+              authToken = accessToken;
+            })
+            .catch((error) => {
+              console.error("Error refreshing token:", error.message);
+            });
+        }
+      }
+    });
+
+    const allAccounts = await Promise.all(accountPromises);
+    console.log(allAccounts);
+    const filteredAccounts = allAccounts.filter(
+      (acc) => acc?.leadInfo?.leadSource?.includes(source) ?? false
+    );
+
+    return res.status(200).send({ data: filteredAccounts, message: "SUCCESS" });
+  } catch (error) {
+    console.log("INTERNAL SERVER ERROR::::CANT GET ACCOUNTS");
+    return res.status(500).send("INTERNAL SERVER ERROR::::CANT GET ACCOUNTS");
+  }
+});
+
+app.get("/accounts", verifyToken, async (req, res) => {
+  const { adminUuid, fromDate, toDate } = req.body;
+  let source;
+  console.log(req.body);
+
+  if (!adminUuid) {
+    console.log("ADMIN UUID NOT ADDED");
+    return res.status(400).send("BAD REQUEST:::::CHECK REQUEST BODY");
+  }
+  if (
+    (fromDate && !isValidISOString(fromDate)) ||
+    (toDate && !isValidISOString(toDate))
+  ) {
+    console.log("WRONG DATE FRORMAT");
+    return res
+      .status(400)
+      .send("BAD REQUEST:::::DATE FORMAT MUST BE ISO STRING");
+  }
+  // if(new Date(fromDate)< new Date("2023-12-21T00:00:00.000Z")){
+  //   console.log("OUT OF RANGE");
+  //   return res.status(400).send("BAD REQUEST:::::DATE IS OUT OF RANGE");
+  // }
+  try {
+    const keys = await readAllFromFirestore("keys");
+
+    if (!keys) {
+      console.log("INTERNAL SERVER ERROR:::CANT READ KEYS");
+      return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ KEYS");
+    }
+    console.log("Keys: ",keys);
+    ouuterLoop: for (const obj of keys) {
+      for (const key in obj) {
+        if (obj[key] === adminUuid) {
+          source = key;
+          break ouuterLoop;
+        }
+      }
+    }
+
+    if (!source) {
+      console.log("ADMIN UUID IS NOT FOUND IN STORE");
+      return res.status(400).send("ADMIN UUID IS NOT FOUND IN STORE");
+    }
+  } catch (error) {
+    console.error("Error reading or parsing suffices:", error);
+    return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ SUFFICES");
+  }
+
+  try {
+    console.log("Source:   ", source);
+    const filteredAccounts = await getAllAccounts(source, fromDate, toDate);
+    console.log(filteredAccounts.length);
+
+    return res.status(200).send({
+      amount: filteredAccounts.length,
+      data: filteredAccounts,
+      message: "SUCCESS",
+    });
+  } catch (error) {
+    console.log("INTERNAL SERVER ERROR::::CANT GET ACCOUNTS");
+    return res.status(500).send("INTERNAL SERVER ERROR::::CANT GET ACCOUNTS");
+  }
+});
+
 // app.get("/", (req,res)=>{
 //   return res.json({message:"hello"})
 // })
 
-module.exports = {app, readKeysFromFB, readUsersFromFB, readSufficesFromFB};
+module.exports = app;
