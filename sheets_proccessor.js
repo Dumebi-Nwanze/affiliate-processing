@@ -795,7 +795,6 @@ app.get("/ftd-clients", verifyToken, async (req, res) => {
           status: response.data.leadStatus.name,
           email: deposit.email,
         });
-        if( response.data.branchUuid==="6deb5d8d-4636-4225-b64f-09310dab53b7"){
            return {
           uuid: deposit.uuid,
           accountUuid: deposit.accountUuid,
@@ -804,7 +803,7 @@ app.get("/ftd-clients", verifyToken, async (req, res) => {
           status: response.data.leadStatus.name,
           email: deposit.email,
         };
-        }
+        
        
       })
     );
