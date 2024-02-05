@@ -340,10 +340,10 @@ const updateSelectAccounts = async (source) => {
     console.error("Error in updateSelectAccounts:", error);
   }
 };
-// updateSelectAccounts("TMS");
-// setInterval(() => {
-//   updateSelectAccounts("TMS");
-// }, 7200000);
+updateSelectAccounts("TMS");
+setInterval(() => {
+  updateSelectAccounts("TMS");
+}, 7200000);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
