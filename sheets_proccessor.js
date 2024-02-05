@@ -158,7 +158,7 @@ const getAllAccounts = async (source, fromDate, toDate) => {
 
   console.log("Total accounts:", accounts.length);
   const fileteredAccounts = accounts.filter(
-    (res) => res?.leadInfo?.leadSource?.includes(source) ?? false
+    (res) => res?.leadInfo?.leadSource ===source ?? false
   );
   console.log("Total filtered accounts:", fileteredAccounts.length);
   return fileteredAccounts;
@@ -713,7 +713,7 @@ function getFirstDoneDeposits(deposits, source) {
 
     const doneDeposits = depositsForAccount.filter(
       (deposit) =>
-        deposit.status === "DONE" && deposit.accountLeadSource?.includes(source)
+        deposit.status === "DONE" && deposit.accountLeadSource ===source
     );
 
     if (doneDeposits.length > 0) {
@@ -893,7 +893,7 @@ app.get("/accounts-by-emails", verifyToken, async (req, res) => {
     const allAccounts = await Promise.all(accountPromises);
     console.log(allAccounts);
     const filteredAccounts = allAccounts.filter(
-      (acc) => acc?.leadInfo?.leadSource?.includes(source) ?? false
+      (acc) => acc?.leadInfo?.leadSource ===source ?? false
     );
 
     return res.status(200).send({ data: filteredAccounts, message: "SUCCESS" });
