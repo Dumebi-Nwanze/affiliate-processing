@@ -17,7 +17,6 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
-
 const app = express();
 
 app.use(morgan("dev"));
@@ -106,7 +105,6 @@ async function sendLeadToMatchTrade(data) {
   }
 }
 
-
 const getAllAccounts = async (source, fromDate, toDate) => {
   await getToken()
     .then((accessToken) => {
@@ -158,7 +156,7 @@ const getAllAccounts = async (source, fromDate, toDate) => {
 
   console.log("Total accounts:", accounts.length);
   const fileteredAccounts = accounts.filter(
-    (res) => res?.leadInfo?.leadSource ===source ?? false
+    (res) => res?.leadInfo?.leadSource === source ?? false
   );
   console.log("Total filtered accounts:", fileteredAccounts.length);
   return fileteredAccounts;
@@ -356,7 +354,6 @@ async function pushToDialer(
                   "Lead push, mass assign and weight update successful"
                 );
               });
-
           })
           .catch(async (error) => {
             console.error("Error occurred during mass assign: ", error);
@@ -496,8 +493,6 @@ const readAllFromFirestore = async (collectionname) => {
   }
 };
 
-
-
 app.post("/getAccessToken", async (req, res) => {
   const { username, password } = req.body;
   console.log(req.body);
@@ -505,7 +500,7 @@ app.post("/getAccessToken", async (req, res) => {
   const users = await readAllFromFirestore("users");
   console.log(users);
 
-  const user = users.filter((u) => u.username === username)[0]?? null;
+  const user = users.filter((u) => u.username === username)[0] ?? null;
 
   console.log(user);
 
@@ -713,7 +708,7 @@ function getFirstDoneDeposits(deposits, source) {
 
     const doneDeposits = depositsForAccount.filter(
       (deposit) =>
-        deposit.status === "DONE" && deposit.accountLeadSource ===source
+        deposit.status === "DONE" && deposit.accountLeadSource === source
     );
 
     if (doneDeposits.length > 0) {
@@ -757,7 +752,6 @@ app.get("/ftd-clients", verifyToken, async (req, res) => {
         }
       }
     }
-  
 
     if (!source) {
       console.log("ADMIN UUID IS NOT FOUND IN STORE");
@@ -788,6 +782,7 @@ app.get("/ftd-clients", verifyToken, async (req, res) => {
       filteredDeposits.map(async (deposit) => {
         const response = await getClientAccounts(deposit.email);
         console.log({
+          branchUuid: response.data.branchUuid,
           uuid: deposit.uuid,
           accountUuid: deposit.accountUuid,
           ftd_date: deposit.created,
@@ -795,22 +790,24 @@ app.get("/ftd-clients", verifyToken, async (req, res) => {
           status: response.data.leadStatus.name,
           email: deposit.email,
         });
-           return {
-          uuid: deposit.uuid,
-          accountUuid: deposit.accountUuid,
-          ftd_date: deposit.created,
-          amount: deposit.amount,
-          status: response.data.leadStatus.name,
-          email: deposit.email,
-        };
-        
-       
+        if (
+          response.data.branchUuid !== "7f04a46c-483b-42ba-b2b0-c3d2e942cc00"
+        ) {
+          return {
+            uuid: deposit.uuid,
+            accountUuid: deposit.accountUuid,
+            ftd_date: deposit.created,
+            amount: deposit.amount,
+            status: response.data.leadStatus.name,
+            email: deposit.email,
+          };
+        }
       })
     );
-
+    const notNullDeposits = formattedDeposits.filter((d) => d != null);
     res.status(200).send({
-      amount: formattedDeposits.length,
-      data: formattedDeposits,
+      amount: notNullDeposits.length,
+      data: notNullDeposits,
       message: "SUCCESS",
     });
   } catch (e) {
@@ -836,7 +833,7 @@ app.get("/accounts-by-emails", verifyToken, async (req, res) => {
       console.log("INTERNAL SERVER ERROR:::CANT READ KEYS");
       return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ KEYS");
     }
-    console.log("Keys: ",keys);
+    console.log("Keys: ", keys);
     ouuterLoop: for (const obj of keys) {
       for (const key in obj) {
         if (obj[key] === adminUuid) {
@@ -895,7 +892,7 @@ app.get("/accounts-by-emails", verifyToken, async (req, res) => {
     const allAccounts = await Promise.all(accountPromises);
     console.log(allAccounts);
     const filteredAccounts = allAccounts.filter(
-      (acc) => acc?.leadInfo?.leadSource ===source ?? false
+      (acc) => acc?.leadInfo?.leadSource === source ?? false
     );
 
     return res.status(200).send({ data: filteredAccounts, message: "SUCCESS" });
@@ -934,7 +931,7 @@ app.get("/accounts", verifyToken, async (req, res) => {
       console.log("INTERNAL SERVER ERROR:::CANT READ KEYS");
       return res.status(500).send("INTERNAL SERVER ERROR:::CANT READ KEYS");
     }
-    console.log("Keys: ",keys);
+    console.log("Keys: ", keys);
     ouuterLoop: for (const obj of keys) {
       for (const key in obj) {
         if (obj[key] === adminUuid) {
