@@ -39,6 +39,8 @@ const validateToken = (req, res, next) => {
 
 let authToken = ""; //auth token to be refreshed by setInterval of 10 mins running getToken function
 
+const ignoreBranches = ["55b51d62-0461-4d42-b20d-82ec7027837d","7f04a46c-483b-42ba-b2b0-c3d2e942cc00"]
+
 async function getToken() {
   const data = new URLSearchParams();
   data.append("grant_type", "password");
@@ -791,7 +793,7 @@ app.get("/ftd-clients", verifyToken, async (req, res) => {
           email: deposit.email,
         });
         if (
-          response.data.branchUuid !== "7f04a46c-483b-42ba-b2b0-c3d2e942cc00"
+          !ignoreBranches.includes(response.data.branchUuid)
         ) {
           return {
             uuid: deposit.uuid,
