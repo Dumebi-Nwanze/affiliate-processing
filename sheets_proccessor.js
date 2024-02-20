@@ -532,8 +532,6 @@ app.post("/create-lead", verifyToken, async (req, res) => {
     purchasesite,
     supportsite,
     country,
-    branchUuid,
-    offerUuid,
     password,
   } = req.body;
   console.log(req.body);
@@ -583,7 +581,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
 
         if (response.status == "SUCCESS") {
           const matchTradeData = {
-            offerUuid: offerUuid,
+            offerUuid: "d04e7df5-9ad4-4979-b4bc-5045c73a2cc7",
             createAsDepositedAccount: false,
             accountManager: null,
             password: password,
@@ -591,7 +589,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
               //uuid: uuid,
               email: email,
               name: name,
-              branchUuid: branchUuid,
+              branchUuid: "6deb5d8d-4636-4225-b64f-09310dab53b7",
               surname: surname,
               phone: phoneNumber,
               country: country,
