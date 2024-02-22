@@ -340,9 +340,9 @@ const updateSelectAccounts = async (source) => {
     console.error("Error in updateSelectAccounts:", error);
   }
 };
-updateSelectAccounts("a-cvr");
+updateSelectAccounts("a-crv");
 setInterval(() => {
-  updateSelectAccounts("a-cvr");
+  updateSelectAccounts("a-crv");
 }, 7200000);
 
 app.listen(port, () => {
