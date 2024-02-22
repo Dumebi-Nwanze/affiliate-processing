@@ -340,10 +340,12 @@ const updateSelectAccounts = async (source) => {
     console.error("Error in updateSelectAccounts:", error);
   }
 };
-updateSelectAccounts("a-crv");
-setInterval(() => {
-  updateSelectAccounts("a-crv");
-}, 7200000);
+async function repeatUpdate() {
+  await updateSelectAccounts("a-crv");
+  setTimeout(repeatUpdate, 1800000);
+}
+
+repeatUpdate(); 
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
