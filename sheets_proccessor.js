@@ -39,7 +39,7 @@ const validateToken = (req, res, next) => {
 
 let authToken = ""; //auth token to be refreshed by setInterval of 10 mins running getToken function
 
-const ignoreBranches = ["55b51d62-0461-4d42-b20d-82ec7027837d","7f04a46c-483b-42ba-b2b0-c3d2e942cc00"]
+const ignoreBranches = ["55b51d62-0461-4d42-b20d-82ec7027837d","7f04a46c-483b-42ba-b2b0-c3d2e942cc00","3c533c31-07ca-4359-bf40-c66489aac9c3","2b5272e7-982a-45e6-973e-7d6ac2e86704"]
 
 async function getToken() {
   const data = new URLSearchParams();
