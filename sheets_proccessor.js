@@ -39,7 +39,12 @@ const validateToken = (req, res, next) => {
 
 let authToken = ""; //auth token to be refreshed by setInterval of 10 mins running getToken function
 
-const ignoreBranches = ["55b51d62-0461-4d42-b20d-82ec7027837d","7f04a46c-483b-42ba-b2b0-c3d2e942cc00","3c533c31-07ca-4359-bf40-c66489aac9c3","2b5272e7-982a-45e6-973e-7d6ac2e86704"]
+const ignoreBranches = [
+  "55b51d62-0461-4d42-b20d-82ec7027837d",
+  "7f04a46c-483b-42ba-b2b0-c3d2e942cc00",
+  "3c533c31-07ca-4359-bf40-c66489aac9c3",
+  "2b5272e7-982a-45e6-973e-7d6ac2e86704",
+];
 
 async function getToken() {
   const data = new URLSearchParams();
@@ -107,7 +112,93 @@ async function sendLeadToMatchTrade(data) {
   }
 }
 
+const getDailerLeads = async (source) => {
+  let allLeads = [];
+
+  try {
+    let offset = 0;
+    let hasMoreLeads = true;
+
+    while (hasMoreLeads) {
+      const apiUrl = `https://mc.td.commpeak.com/api/leads/limit/500;${offset}/purchase_site/${source}/created_at/2023-12-21%2013:15:11;>`;
+      const headers = {
+        accept: "*/*",
+        Authorization: `Basic ${btoa("developer2:QddYW1F3wVOx")}`,
+        "Content-Type": "application/json",
+      };
+      const response = await axios.get(apiUrl, { headers });
+      const leads = response.data.leads;
+
+      if (leads.length === 0 || leads.length < 500) {
+        // If there are no more leads or the number of leads is less than 500, stop the loop
+        hasMoreLeads = false;
+      }
+
+      allLeads.push(...leads);
+      offset += 500;
+    }
+
+    console.log(`Total number of leads: ${allLeads.length}`);
+    if (allLeads.length > 0) {
+      console.log(`Last lead ID: ${allLeads[allLeads.length - 1].email}`);
+    }
+
+    return allLeads;
+  } catch (error) {
+    console.log(error.response.data);
+    return [];
+  }
+};
+
+const getAgentComments = async (leadId, agentsList) => {
+  try {
+    const apiUrl = `https://mc.td.commpeak.com/api/comments/lead_id/${leadId}/`;
+    const headers = {
+      accept: "application/json",
+      Authorization: `Basic ${btoa("developer2:QddYW1F3wVOx")}`,
+      "Content-Type": "application/json",
+    };
+    const response = await axios.get(apiUrl, { headers });
+
+    const comments = response.data.comments;
+    const filteredComments = comments.filter((comment) =>
+      agentsList.includes(comment.creator_user_id)
+    );
+    filteredComments.sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    );
+
+   // console.log(filteredComments[0]);
+    return filteredComments[0];
+  } catch (error) {
+   // console.log("Error: ", error.response.data);
+    return { body: "No answer or no comment" };
+  }
+};
+const getAllUsers = async (id) => {
+  try {
+    const apiUrl = `https://mc.td.commpeak.com/api/users`;
+    const headers = {
+      accept: "application/json",
+      Authorization: `Basic ${btoa("developer2:QddYW1F3wVOx")}`,
+      "Content-Type": "application/json",
+    };
+    const response = await axios.get(apiUrl, { headers });
+    const users = response.data.users.filter((obj) => {
+      return obj.desks && Object.keys(obj.desks).includes("5");
+    });
+
+    const secondCampaignAgents = users.map((u) => u.id);
+    return secondCampaignAgents;
+  } catch (error) {
+    console.log("Error: ", error.response.data);
+    return [];
+  }
+};
+
 const getAllAccounts = async (source, fromDate, toDate) => {
+  const dailerAccounts = await getDailerLeads(source);
+  const allAgents = await getAllUsers();
   await getToken()
     .then((accessToken) => {
       console.log("Access Token:", accessToken);
@@ -135,33 +226,47 @@ const getAllAccounts = async (source, fromDate, toDate) => {
     totalPages = response.data.totalPages;
     const currentPageAccounts = response.data.content;
     for (let i = 0; i < currentPageAccounts.length; i++) {
-      accounts.push({
-        uuid: currentPageAccounts[i].uuid,
-        created: currentPageAccounts[i].created,
-        updated: currentPageAccounts[i].updated,
-        leadInfo: {
+      if (currentPageAccounts[i]?.leadSource === source) {
+        let comment;
+        const dailerAccount = dailerAccounts.find(
+          (d) => d.email == currentPageAccounts[i].email
+        );
+
+        if (dailerAccount!=undefined) {
+          comment = await getAgentComments(dailerAccount.id, allAgents);
+        }
+       
+
+        accounts.push({
+          uuid: currentPageAccounts[i].uuid,
+          created: currentPageAccounts[i].created,
+          updated: currentPageAccounts[i].updated,
+          leadInfo: {
+            leadSource: currentPageAccounts[i].leadSource,
+          },
+          email: currentPageAccounts[i].email,
+          branchUuid: currentPageAccounts[i].branchUuid,
+          name: currentPageAccounts[i].name,
+          surname: currentPageAccounts[i].surname,
+          phone: currentPageAccounts[i].phone,
+          country: currentPageAccounts[i].country,
+          role: currentPageAccounts[i].role,
+          leadStatus: currentPageAccounts[i].leadStatus,
           leadSource: currentPageAccounts[i].leadSource,
-        },
-        email: currentPageAccounts[i].email,
-        branchUuid: currentPageAccounts[i].branchUuid,
-        name: currentPageAccounts[i].name,
-        surname: currentPageAccounts[i].surname,
-        phone: currentPageAccounts[i].phone,
-        country: currentPageAccounts[i].country,
-        role: currentPageAccounts[i].role,
-        leadStatus: currentPageAccounts[i].leadStatus,
-        leadSource: currentPageAccounts[i].leadSource,
-      });
+          lastComment: comment?.body ?? "",
+        });
+      }
     }
     currentPage++;
   } while (currentPage < totalPages);
 
   console.log("Total accounts:", accounts.length);
-  const fileteredAccounts = accounts.filter(
-    (res) => res?.leadInfo?.leadSource === source ?? false
-  );
-  console.log("Total filtered accounts:", fileteredAccounts.length);
-  return fileteredAccounts;
+  // const fileteredAccounts = accounts.filter(
+  //   (res) => res?.leadInfo?.leadSource === source ?? false
+  // );
+  console.log("Total filtered accounts:", accounts.length);
+
+  return accounts;
 };
 
 const getClientAccounts = async (email) => {
@@ -790,9 +895,7 @@ app.get("/ftd-clients", verifyToken, async (req, res) => {
           status: response.data.leadStatus.name,
           email: deposit.email,
         });
-        if (
-          !ignoreBranches.includes(response.data.branchUuid)
-        ) {
+        if (!ignoreBranches.includes(response.data.branchUuid)) {
           return {
             uuid: deposit.uuid,
             accountUuid: deposit.accountUuid,
