@@ -197,8 +197,8 @@ const getAllUsers = async (id) => {
 };
 
 const getAllAccounts = async (source, fromDate, toDate) => {
-  const dailerAccounts = await getDailerLeads(source);
-  const allAgents = await getAllUsers();
+  // const dailerAccounts = await getDailerLeads(source);
+  // const allAgents = await getAllUsers();
   await getToken()
     .then((accessToken) => {
       console.log("Access Token:", accessToken);
@@ -227,14 +227,14 @@ const getAllAccounts = async (source, fromDate, toDate) => {
     const currentPageAccounts = response.data.content;
     for (let i = 0; i < currentPageAccounts.length; i++) {
       if (currentPageAccounts[i]?.leadSource === source) {
-        let comment;
-        const dailerAccount = dailerAccounts.find(
-          (d) => d.email == currentPageAccounts[i].email
-        );
+        // let comment;
+        // const dailerAccount = dailerAccounts.find(
+        //   (d) => d.email == currentPageAccounts[i].email
+        // );
 
-        if (dailerAccount!=undefined) {
-          comment = await getAgentComments(dailerAccount.id, allAgents);
-        }
+        // if (dailerAccount!=undefined) {
+        //   comment = await getAgentComments(dailerAccount.id, allAgents);
+        // }
        
 
         accounts.push({
@@ -253,7 +253,7 @@ const getAllAccounts = async (source, fromDate, toDate) => {
           role: currentPageAccounts[i].role,
           leadStatus: currentPageAccounts[i].leadStatus,
           leadSource: currentPageAccounts[i].leadSource,
-          lastComment: comment?.body ?? "",
+          //lastComment: comment?.body ?? "",
         });
       }
     }
