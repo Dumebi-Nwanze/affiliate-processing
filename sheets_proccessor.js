@@ -719,7 +719,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
               //Push to All leads 2 sheet
               const tbpDate = new Date().toISOString();
               fetch(
-                "https://sheet.best/api/sheets/c9adf0ee-f4da-4bfc-9d8e-4dbce9268884", //All Leads 2 Sheet
+                "https://sheet.best/api/sheets/1e6b011d-a843-4e90-8d97-fd910f01db62", //All Leads 2 Sheet
                 {
                   method: "POST",
                   mode: "cors",
@@ -894,6 +894,7 @@ app.get("/ftd-clients", verifyToken, async (req, res) => {
           amount: deposit.amount,
           status: response.data.leadStatus.name,
           email: deposit.email,
+          created_at: response.data.created
         });
         if (!ignoreBranches.includes(response.data.branchUuid)) {
           return {
@@ -903,6 +904,7 @@ app.get("/ftd-clients", verifyToken, async (req, res) => {
             amount: deposit.amount,
             status: response.data.leadStatus.name,
             email: deposit.email,
+            created_at: response.data.created
           };
         }
       })
