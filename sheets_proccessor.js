@@ -168,10 +168,10 @@ const getAgentComments = async (leadId, agentsList) => {
       (a, b) => new Date(b.created_at) - new Date(a.created_at)
     );
 
-   // console.log(filteredComments[0]);
+    // console.log(filteredComments[0]);
     return filteredComments[0];
   } catch (error) {
-   // console.log("Error: ", error.response.data);
+    // console.log("Error: ", error.response.data);
     return { body: "No answer or no comment" };
   }
 };
@@ -235,7 +235,6 @@ const getAllAccounts = async (source, fromDate, toDate) => {
         // if (dailerAccount!=undefined) {
         //   comment = await getAgentComments(dailerAccount.id, allAgents);
         // }
-       
 
         accounts.push({
           uuid: currentPageAccounts[i].uuid,
@@ -301,180 +300,160 @@ async function pushToDialer(
   purchasesite,
   supportsite,
   country,
-  campaignid
+  campaignid,
+  original_identifier
 ) {
   console.log("Pushing to dialer");
-  let date_ob = new Date();
-  let date = ("0" + date_ob.getDate()).slice(-2);
-  let month = ("0" + (date_ob.getMonth() + 1)).slice(-2);
-  let year = date_ob.getFullYear();
-  let hours = date_ob.getHours();
-  let minutes = date_ob.getMinutes();
-  let seconds = date_ob.getSeconds();
-  let currentdate =
-    year +
-    "-" +
-    month +
-    "-" +
-    date +
-    " " +
-    hours +
-    ":" +
-    minutes +
-    ":" +
-    seconds;
-  const url = "http://mc.td.commpeak.com/api/leads";
-  const urlmass = "https://mc.td.commpeak.com/api/campaign-leads/mass-assign";
-
-  const username = "developer2";
-  const password = "QddYW1F3wVOx";
-  const credentials = btoa(`${username}:${password}`);
-
-  const postData = [
-    {
-      first_name: name,
-      last_name: surname,
-      phone: phoneNumber,
-      phone_normalized: phoneNumber,
-      phone2: phoneNumber,
-      phone_normalized2: phoneNumber,
-      address1: "string",
-      address2: "string",
-      country: country,
-      state: "string",
-      city: "string",
-      zip: "string",
-      lat: "Unknown Type: float",
-      lng: "Unknown Type: float",
-      timezone: "string",
-      original_identifier: "string",
-      support_site: supportsite,
-      purchase_site: purchasesite,
-      purchase_date: currentdate,
-      purchase_amount: "string",
-      purchase_product_name: "string",
-      purchase_card_name: "string",
-      purchase_card_type: "string",
-      purchase_card_digits: "string",
-      email: email,
-      birthdate: "string",
-      loan_amount: "string",
-    },
-  ];
-
-  console.log(postData);
-  const options = {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Basic ${credentials}`,
-    },
-    body: JSON.stringify(postData),
-  };
-
   try {
-    await fetch(url, options)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(
-            "Error occured while creating lead in dialer CRM:::::::: [" +
-              response.status +
-              "]"
-          );
-        }
-        return response.json();
-      })
-      .then(async (data) => {
-        console.log("Sucessfully added lead; LeadID: ", data.leads[0].id);
+    let date_ob = new Date();
+    let date = ("0" + date_ob.getDate()).slice(-2);
+    let month = ("0" + (date_ob.getMonth() + 1)).slice(-2);
+    let year = date_ob.getFullYear();
+    let hours = date_ob.getHours();
+    let minutes = date_ob.getMinutes();
+    let seconds = date_ob.getSeconds();
+    let currentdate =
+      year +
+      "-" +
+      month +
+      "-" +
+      date +
+      " " +
+      hours +
+      ":" +
+      minutes +
+      ":" +
+      seconds;
+    const url = "http://mc.td.commpeak.com/api/leads";
+    const urlmass = "https://mc.td.commpeak.com/api/campaign-leads/mass-assign";
 
-        console.log("Successfully pushed lead to dialer");
+    const username = "developer2";
+    const password = "QddYW1F3wVOx";
+    const credentials = btoa(`${username}:${password}`);
 
-        const putData = {
-          where: {
-            id: [data.leads[0].id],
-          },
-          campaign_id: campaignid,
-          remove_from_others: true,
-        };
+    const postData = [
+      {
+        first_name: name,
+        last_name: surname,
+        phone: phoneNumber,
+        phone_normalized: phoneNumber,
+        phone2: phoneNumber,
+        phone_normalized2: phoneNumber,
+        address1: "string",
+        address2: "string",
+        country: country,
+        state: "string",
+        city: "string",
+        zip: "string",
+        lat: "Unknown Type: float",
+        lng: "Unknown Type: float",
+        timezone: "string",
+        original_identifier: original_identifier,
+        support_site: supportsite,
+        purchase_site: purchasesite,
+        purchase_date: currentdate,
+        purchase_amount: "string",
+        purchase_product_name: "string",
+        purchase_card_name: "string",
+        purchase_card_type: "string",
+        purchase_card_digits: "string",
+        email: email,
+        birthdate: "string",
+        loan_amount: "string",
+      },
+    ];
 
-        const optionsmass = {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Basic ${credentials}`,
-          },
-          body: JSON.stringify(putData),
-        };
-        await fetch(urlmass, optionsmass)
-          .then((response) => {
-            console.log("Lead mass-assignment response:", response);
-            if (!response.ok) {
-              throw new Error(
-                "Error occured during mass assign::::::: [" +
-                  response.status +
-                  "]"
-              );
-            }
-            return response.json();
-          })
-          .then(async (data) => {
-            const urlmassweight =
-              "https://mc.td.commpeak.com/api/campaign-leads/update-campaign-leads";
-            const campaignLeadId = Number(Object.keys(data.leads)[0]);
-            console.log("Updating Campaign: ", campaignLeadId);
-            console.log("Campaign LeadId:", campaignLeadId);
-            const putDataW = {
-              where: {
-                id: [campaignLeadId],
-              },
-              update: {
-                campaignLead: {
-                  weight: "10000",
-                },
-              },
-            };
-            const optionsmassweight = {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Basic ${credentials}`,
-              },
-              body: JSON.stringify(putDataW),
-            };
-            await fetch(urlmassweight, optionsmassweight)
-              .then(async (response) => {
-                const data = await response.json();
-                console.log(
-                  "Response from Campaign Mass Update weight: ",
-                  data
-                );
-              })
-              .then((data) => {
-                console.log(
-                  "Dialer Push Successful!!!!!!! \n",
-                  data,
-                  putData,
-                  putDataW
-                );
+    console.log(postData);
+    const options = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Basic ${credentials}`,
+      },
+      body: JSON.stringify(postData),
+    };
 
-                console.log(
-                  "Lead push, mass assign and weight update successful"
-                );
-              });
-          })
-          .catch(async (error) => {
-            console.error("Error occurred during mass assign: ", error);
-            console.error(await fetch(url, options));
-          });
-      })
-      .catch(async (error) => {
-        console.error("Error occurred during weight assign: ", error);
-        console.error(await fetch(url, options));
-      });
+    const response = await fetch(url, options);
+    if (!response.ok) {
+      throw new Error(
+        "Error occured while creating lead in dialer CRM:::::::: [" +
+          response.status +
+          "]"
+      );
+    }
+    const data = await response.json();
+    console.log("Successfully added lead; LeadID: ", data.leads[0].id);
+
+    console.log("Successfully pushed lead to dialer");
+
+    const putData = {
+      where: {
+        id: [data.leads[0].id],
+      },
+      campaign_id: campaignid,
+      remove_from_others: true,
+    };
+
+    const optionsmass = {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Basic ${credentials}`,
+      },
+      body: JSON.stringify(putData),
+    };
+
+    const massAssignResponse = await fetch(urlmass, optionsmass);
+    console.log("Lead mass-assignment response:", massAssignResponse);
+    if (!massAssignResponse.ok) {
+      throw new Error(
+        "Error occured during mass assign::::::: [" +
+          massAssignResponse.status +
+          "]"
+      );
+    }
+    const massAssignData = await massAssignResponse.json();
+    const urlmassweight =
+      "https://mc.td.commpeak.com/api/campaign-leads/update-campaign-leads";
+    const campaignLeadId = Number(Object.keys(massAssignData.leads)[0]);
+    console.log("Updating Campaign: ", campaignLeadId);
+    console.log("Campaign LeadId:", campaignLeadId);
+    const putDataW = {
+      where: {
+        id: [campaignLeadId],
+      },
+      update: {
+        campaignLead: {
+          weight: "10000",
+        },
+      },
+    };
+    const optionsmassweight = {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Basic ${credentials}`,
+      },
+      body: JSON.stringify(putDataW),
+    };
+
+    const massWeightResponse = await fetch(urlmassweight, optionsmassweight);
+    const massWeightData = await massWeightResponse.json();
+    console.log("Response from Campaign Mass Update weight: ", massWeightData);
+
+    console.log(
+      "Dialer Push Successful!!!!!!! \n",
+      massWeightData,
+      putData,
+      putDataW
+    );
+
+    console.log("Lead push, mass assign and weight update successful");
 
     return { status: "SUCCESS", message: "Successfully pushed to Dialer" };
-  } catch (e) {
-    throw new Error(`Error occured when pushing lead to dialer ${e}`);
+  } catch (error) {
+    console.error("Error occurred: ", error);
+    return { status: "ERROR", message: error.message };
   }
 }
 
@@ -638,6 +617,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
     supportsite,
     country,
     password,
+    original_identifier,
   } = req.body;
   console.log(req.body);
   let adminUuid;
@@ -680,7 +660,8 @@ app.post("/create-lead", verifyToken, async (req, res) => {
         purchasesite,
         supportsite,
         country,
-        13
+        13,
+        original_identifier
       ).then(async (response) => {
         console.log("Did Dialer succeed: ", response);
 
@@ -779,6 +760,13 @@ app.post("/create-lead", verifyToken, async (req, res) => {
               .status(500)
               .send({ error: "INTERNAL_SERVER_ERROR", message: error.message });
           }
+        } else {
+          res
+            .status(500)
+            .send({
+              error: "INTERNAL_SERVER_ERROR",
+              message: "Could not push to CRM",
+            });
         }
       });
     } catch (e) {
@@ -894,7 +882,7 @@ app.get("/ftd-clients", verifyToken, async (req, res) => {
           amount: deposit.amount,
           status: response.data.leadStatus.name,
           email: deposit.email,
-          created_at: response.data.created
+          created_at: response.data.created,
         });
         if (!ignoreBranches.includes(response.data.branchUuid)) {
           return {
@@ -904,7 +892,7 @@ app.get("/ftd-clients", verifyToken, async (req, res) => {
             amount: deposit.amount,
             status: response.data.leadStatus.name,
             email: deposit.email,
-            created_at: response.data.created
+            created_at: response.data.created,
           };
         }
       })
