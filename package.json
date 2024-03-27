@@ -8,7 +8,9 @@
     "dev": "nodemon index.js",
     "start": "nodemon index.js",
     "dev2": "nodemon index2.js",
-    "start2": "nodemon index2.js"
+    "start2": "nodemon index2.js",
+    "dev3": "nodemon index3.js",
+    "start3": "nodemon index3.js"
   },
   "author": "",
   "license": "ISC",

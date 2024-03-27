@@ -2,11 +2,11 @@
 const app = require("./sheets_proccessor");
 const updateSelectAccounts = require("./helpers")
 
-const port = process.env.PORT2 || 90;
+const port = process.env.PORT3 || 100;
 
 
 async function repeatUpdate() {
-  await updateSelectAccounts("a-crv");
+  await updateSelectAccounts("STWS");
   setTimeout(repeatUpdate, 1800000);
 }
 

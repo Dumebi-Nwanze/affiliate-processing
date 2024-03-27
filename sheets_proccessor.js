@@ -42,7 +42,7 @@ let authToken = ""; //auth token to be refreshed by setInterval of 10 mins runni
 const ignoreBranches = [
   "55b51d62-0461-4d42-b20d-82ec7027837d",
   "7f04a46c-483b-42ba-b2b0-c3d2e942cc00",
-  "3c533c31-07ca-4359-bf40-c66489aac9c3",
+  //"3c533c31-07ca-4359-bf40-c66489aac9c3",
   "2b5272e7-982a-45e6-973e-7d6ac2e86704",
 ];
 
@@ -497,7 +497,41 @@ const getDeposits = async (fromDate, toDate) => {
   return deposits;
 };
 
-/**    Push to Dialer Code End */
+/**    Get transactions by email and return if earliest do is within date range */
+
+const isFTD = async (fromDate, toDate, email) => {
+  await getToken()
+    .then((accessToken) => {
+      //console.log("Access Token:", accessToken);
+      authToken = accessToken;
+    })
+    .catch((error) => {
+      console.error("Error:", error.message);
+    });
+
+
+
+
+    const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/payment/api/partner/76/transactions?email=${email}`;
+
+    const headers = {
+      accept: "*/*",
+      Authorization: `Bearer ${authToken}`,
+    };
+try{
+  const response = await axios.get(apiUrl, { headers });
+  console.log(response.data);
+}
+catch(e){
+console.log(e.response.data);
+}
+    
+
+    
+    
+
+};
+
 
 function verifyToken(req, res, next) {
   const token = req.header("Authorization");
@@ -738,6 +772,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
                   email: response.data.email,
                   name: response.data.name,
                   surname: response.data.surname,
+                  one_time_link: `https://client.glblogin.com/?auth=${response.data.oneTimeToken}`
                 },
               });
             } else {
