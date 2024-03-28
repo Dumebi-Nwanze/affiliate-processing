@@ -65,7 +65,7 @@ async function getToken() {
       }
     );
 
-    console.log("Access Token:", response.data.access_token);
+    //console.log("Access Token:", response.data.access_token);
     return response.data.access_token;
   } catch (error) {
     console.error("Error:", error.message);
@@ -201,7 +201,7 @@ const getAllAccounts = async (source, fromDate, toDate) => {
   // const allAgents = await getAllUsers();
   await getToken()
     .then((accessToken) => {
-      console.log("Access Token:", accessToken);
+      //console.log("Access Token:", accessToken);
       authToken = accessToken;
     })
     .catch((error) => {
@@ -499,7 +499,7 @@ const getDeposits = async (fromDate, toDate) => {
 
 /**    Get transactions by email and return if earliest do is within date range */
 
-const isFTD = async (fromDate, toDate, email) => {
+const isFTD = async (fromDate, email) => {
   await getToken()
     .then((accessToken) => {
       //console.log("Access Token:", accessToken);
@@ -512,7 +512,7 @@ const isFTD = async (fromDate, toDate, email) => {
 
 
 
-    const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/payment/api/partner/76/transactions?email=${email}`;
+    const apiUrl = `https://bo-mtrwl.match-trade.com/documentation/payment/api/partner/76/transactions?email=${email}&size=100000`;
 
     const headers = {
       accept: "*/*",
@@ -520,10 +520,14 @@ const isFTD = async (fromDate, toDate, email) => {
     };
 try{
   const response = await axios.get(apiUrl, { headers });
-  console.log(response.data);
+  const doneDeposits = Object.values(response.data)[0].filter((transaction)=>transaction.operationStatus=="DONE"&&transaction.operationType=="DEPOSIT")
+let isValidFTD =   doneDeposits.every((deposit)=>new Date(deposit.created)>=new Date(fromDate))
+
+  console.log(`${email} ${isValidFTD? "is":"is not"} a valid FTD`);
+  return isValidFTD;
 }
 catch(e){
-console.log(e.response.data);
+console.log(e.response?.data);
 }
     
 
@@ -676,7 +680,7 @@ app.post("/create-lead", verifyToken, async (req, res) => {
 
   await getToken()
     .then((accessToken) => {
-      console.log("Access Token:", accessToken);
+      //console.log("Access Token:", accessToken);
       authToken = accessToken;
     })
     .catch((error) => {
@@ -909,30 +913,38 @@ app.get("/ftd-clients", verifyToken, async (req, res) => {
     const formattedDeposits = await Promise.all(
       filteredDeposits.map(async (deposit) => {
         const response = await getClientAccounts(deposit.email);
-        console.log({
-          branchUuid: response.data.branchUuid,
-          uuid: deposit.uuid,
-          accountUuid: deposit.accountUuid,
-          ftd_date: deposit.created,
-          amount: deposit.amount,
-          status: response.data.leadStatus.name,
-          email: deposit.email,
-          created_at: response.data.created,
-        });
-        if (!ignoreBranches.includes(response.data.branchUuid)) {
+        // console.log({
+        //   branchUuid: response.data.branchUuid,
+        //   uuid: deposit.uuid,
+        //   accountUuid: deposit.accountUuid,
+        //   ftd_date: deposit.created,
+        //   amount: deposit.amount,
+        //   status: response.data.leadStatus.name,
+        //   email: deposit.email,
+        //   created_at: response.data.created,
+        // });
+        let isValidFTD = await isFTD(fromDate, deposit.email)
+        if (ignoreBranches.includes(response.data.branchUuid)==false&&isValidFTD) {
           return {
             uuid: deposit.uuid,
             accountUuid: deposit.accountUuid,
             ftd_date: deposit.created,
             amount: deposit.amount,
-            status: response.data.leadStatus.name,
+            status: "Active Client",
             email: deposit.email,
             created_at: response.data.created,
           };
         }
       })
     );
-    const notNullDeposits = formattedDeposits.filter((d) => d != null);
+    const notNullDeposits = formattedDeposits.filter((d) => d != null&&d!=undefined);
+    console.log(`${source} FTDs ${new Date(fromDate).toLocaleDateString()} - ${new Date(toDate).toLocaleDateString()}`);
+    notNullDeposits.map(deposit=>{
+      console.log({
+        "email":deposit.email,
+        "ftd_date":deposit.ftd_date
+      })
+    })
     res.status(200).send({
       amount: notNullDeposits.length,
       data: notNullDeposits,
